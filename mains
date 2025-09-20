@@ -1,0 +1,376 @@
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+import os
+
+class ResumeReviewerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Resume Reviewer")
+        self.root.geometry("900x700")
+
+        # Set a gradient-like background color
+        self.root.configure(bg='#2c3e50')
+
+        # Configure styles
+        self.setup_styles()
+
+        # Current screen tracker
+        self.current_screen = 0
+        self.screens = [
+            self.show_welcome_screen,
+            self.show_did_you_know_screen,
+            self.show_ats_info_screen,
+            self.show_upload_screen
+        ]
+
+        # Did you know state
+        self.show_fact = False
+
+        # Start with welcome screen
+        self.show_current_screen()
+
+    def setup_styles(self):
+        """Configure custom styles for the application"""
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        # Configure button styles
+        style.configure('Continue.TButton',
+                        font=('Arial', 14, 'bold'),
+                        padding=(25, 12),
+                        background='#3498db',
+                        foreground='white')
+
+        style.map('Continue.TButton',
+                  background=[('active', '#2980b9')])
+
+        style.configure('DidYouKnow.TButton',
+                        font=('Arial', 16, 'bold'),
+                        padding=(30, 15),
+                        background='#e74c3c',
+                        foreground='white')
+
+        style.map('DidYouKnow.TButton',
+                  background=[('active', '#c0392b')])
+
+        style.configure('Upload.TButton',
+                        font=('Arial', 12),
+                        padding=(20, 8),
+                        background='#27ae60',
+                        foreground='white')
+
+        style.map('Upload.TButton',
+                  background=[('active', '#229954')])
+
+        style.configure('Back.TButton',
+                        font=('Arial', 10),
+                        padding=(15, 6),
+                        background='#95a5a6',
+                        foreground='white')
+
+        style.map('Back.TButton',
+                  background=[('active', '#7f8c8d')])
+
+        # Configure label styles
+        style.configure('Title.TLabel',
+                        font=('Arial', 24, 'bold'),
+                        background='#2c3e50',
+                        foreground='#ecf0f1')
+
+        style.configure('WelcomeTitle.TLabel',
+                        font=('Arial', 28, 'bold'),
+                        background='#2c3e50',
+                        foreground='#f39c12')
+
+        style.configure('Subtitle.TLabel',
+                        font=('Arial', 16, 'bold'),
+                        background='#2c3e50',
+                        foreground='#3498db')
+
+        style.configure('Body.TLabel',
+                        font=('Arial', 14),
+                        background='#2c3e50',
+                        foreground='#ecf0f1',
+                        wraplength=700)
+
+        style.configure('Fact.TLabel',
+                        font=('Arial', 16, 'bold'),
+                        background='#2c3e50',
+                        foreground='#e74c3c',
+                        wraplength=700)
+
+        style.configure('Selected.TLabel',
+                        font=('Arial', 12),
+                        background='#2c3e50',
+                        foreground='#27ae60')
+
+        style.configure('Warning.TLabel',
+                        font=('Arial', 12),
+                        background='#2c3e50',
+                        foreground='#f39c12')
+
+        # Configure frame style
+        style.configure('Main.TFrame',
+                        background='#34495e',
+                        relief='raised',
+                        borderwidth=2)
+
+    def clear_screen(self):
+        """Clear all widgets from the current screen"""
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+    def show_current_screen(self):
+        """Display the current screen"""
+        self.clear_screen()
+        self.screens[self.current_screen]()
+
+    def next_screen(self):
+        """Move to the next screen"""
+        if self.current_screen < len(self.screens) - 1:
+            self.current_screen += 1
+            self.show_current_screen()
+
+    def show_welcome_screen(self):
+        """Display the welcome screen with colorful design"""
+        # Main frame with colored background
+        main_frame = ttk.Frame(self.root, style='Main.TFrame')
+        main_frame.pack(expand=True, fill='both', padx=40, pady=40)
+
+        # Add some padding frame
+        content_frame = ttk.Frame(main_frame)
+        content_frame.pack(expand=True, fill='both', padx=40, pady=40)
+        content_frame.configure(style='Main.TFrame')
+
+        # Welcome title with special styling
+        welcome_label = ttk.Label(content_frame,
+                                  text="🎯 WELCOME TO THE RESUME REVIEWER! 🎯",
+                                  style='WelcomeTitle.TLabel')
+        welcome_label.pack(pady=(20, 40))
+
+        # Subtitle with different color
+        subtitle_label = ttk.Label(content_frame,
+                                   text="✨ We review your resume using the same standards applied by top companies such as Apple, Microsoft, and other industry leaders. ✨",
+                                   style='Body.TLabel',
+                                   justify='center')
+        subtitle_label.pack(pady=(0, 50))
+
+        # Continue button with hover effect
+        continue_btn = ttk.Button(content_frame,
+                                  text="🚀 GET STARTED",
+                                  style='Continue.TButton',
+                                  command=self.next_screen)
+        continue_btn.pack(pady=30)
+
+    def show_did_you_know_screen(self):
+        """Display the 'Did You Know?' screen with interactive button"""
+        # Main frame
+        main_frame = ttk.Frame(self.root, style='Main.TFrame')
+        main_frame.pack(expand=True, fill='both', padx=40, pady=40)
+
+        # Content frame
+        content_frame = ttk.Frame(main_frame)
+        content_frame.pack(expand=True, fill='both', padx=40, pady=40)
+        content_frame.configure(style='Main.TFrame')
+
+        # Title
+        title_label = ttk.Label(content_frame,
+                                text="💡 INTERESTING FACTS 💡",
+                                style='Title.TLabel')
+        title_label.pack(pady=(20, 40))
+
+        # Did You Know button
+        did_you_know_btn = ttk.Button(content_frame,
+                                      text="🤔 DID YOU KNOW?",
+                                      style='DidYouKnow.TButton',
+                                      command=self.toggle_fact)
+        did_you_know_btn.pack(pady=20)
+
+        # Fact label (initially hidden)
+        self.fact_label = ttk.Label(content_frame,
+                                    text="",
+                                    style='Fact.TLabel',
+                                    justify='center')
+        self.fact_label.pack(pady=(20, 40))
+
+        # Continue button
+        continue_btn = ttk.Button(content_frame,
+                                  text="➡️ CONTINUE",
+                                  style='Continue.TButton',
+                                  command=self.next_screen)
+        continue_btn.pack(pady=20)
+
+        # Back button
+        back_btn = ttk.Button(content_frame,
+                              text="⬅️ BACK",
+                              style='Back.TButton',
+                              command=self.previous_screen)
+        back_btn.pack(side='bottom', pady=10)
+
+    def toggle_fact(self):
+        """Toggle the display of the fact"""
+        if not self.show_fact:
+            self.fact_label.config(text="⏱️ Recruiters spend only 6–9 seconds scanning a resume before making a decision!\n\n📊 That's why every word counts and formatting matters!")
+            self.show_fact = True
+        else:
+            self.fact_label.config(text="")
+            self.show_fact = False
+
+    def show_ats_info_screen(self):
+        """Display the ATS information screen with colors"""
+        # Main frame
+        main_frame = ttk.Frame(self.root, style='Main.TFrame')
+        main_frame.pack(expand=True, fill='both', padx=40, pady=40)
+
+        # Content frame
+        content_frame = ttk.Frame(main_frame)
+        content_frame.pack(expand=True, fill='both', padx=40, pady=40)
+        content_frame.configure(style='Main.TFrame')
+
+        # Title
+        title_label = ttk.Label(content_frame,
+                                text="🤖 APPLICANT TRACKING SYSTEM (ATS) 🤖",
+                                style='Title.TLabel')
+        title_label.pack(pady=(20, 30))
+
+        # Content
+        content_text = (" Even before a recruiter sees your resume, it must pass through an "
+                        "Applicant Tracking System (ATS).\n\n"
+                        "That's why we focus on helping your content stand out — making sure "
+                        "your experiences and achievements are highlighted in a way that captures attention.\n\n"
+                        "Let's optimize your resume for both ATS systems and human reviewers!")
+
+        content_label = ttk.Label(content_frame,
+                                  text=content_text,
+                                  style='Body.TLabel',
+                                  justify='center')
+        content_label.pack(pady=(0, 40))
+
+        # Continue button
+        continue_btn = ttk.Button(content_frame,
+                                  text="📄 UPLOAD RESUME",
+                                  style='Continue.TButton',
+                                  command=self.next_screen)
+        continue_btn.pack(pady=20)
+
+        # Back button
+        back_btn = ttk.Button(content_frame,
+                              text="⬅️ BACK",
+                              style='Back.TButton',
+                              command=self.previous_screen)
+        back_btn.pack(side='bottom', pady=10)
+
+    def show_upload_screen(self):
+        """Display the file upload screen with colorful design"""
+        # Main frame
+        main_frame = ttk.Frame(self.root, style='Main.TFrame')
+        main_frame.pack(expand=True, fill='both', padx=40, pady=40)
+
+        # Content frame
+        content_frame = ttk.Frame(main_frame)
+        content_frame.pack(expand=True, fill='both', padx=40, pady=40)
+        content_frame.configure(style='Main.TFrame')
+
+        # Title
+        title_label = ttk.Label(content_frame,
+                                text="📤 UPLOAD YOUR RESUME",
+                                style='Title.TLabel')
+        title_label.pack(pady=(20, 20))
+
+        # Subtitle
+        subtitle_label = ttk.Label(content_frame,
+                                   text="Please upload your resume below to get started with the analysis.",
+                                   style='Subtitle.TLabel')
+        subtitle_label.pack(pady=(0, 30))
+
+        # File selection frame
+        file_frame = ttk.Frame(content_frame)
+        file_frame.pack(pady=20)
+        file_frame.configure(style='Main.TFrame')
+
+        # Selected file label
+        self.selected_file_var = tk.StringVar()
+        self.selected_file_var.set("📄 No file selected")
+
+        self.file_label = ttk.Label(file_frame,
+                                    textvariable=self.selected_file_var,
+                                    style='Warning.TLabel')
+        self.file_label.pack(pady=(0, 20))
+
+        # Upload button
+        upload_btn = ttk.Button(file_frame,
+                                text="📁 CHOOSE FILE",
+                                style='Upload.TButton',
+                                command=self.upload_file)
+        upload_btn.pack(pady=15)
+
+        # Analyze button (initially disabled)
+        self.analyze_btn = ttk.Button(file_frame,
+                                      text="🔍 ANALYZE RESUME",
+                                      style='Continue.TButton',
+                                      command=self.analyze_resume,
+                                      state='disabled')
+        self.analyze_btn.pack(pady=20)
+
+        # Back button
+        back_btn = ttk.Button(content_frame,
+                              text="⬅️ BACK",
+                              style='Back.TButton',
+                              command=self.previous_screen)
+        back_btn.pack(side='bottom', pady=10)
+
+    def upload_file(self):
+        """Handle file upload with visual feedback"""
+        file_types = [
+            ('PDF files', '*.pdf'),
+            ('Word documents', '*.docx'),
+            ('Text files', '*.txt'),
+            ('All files', '*.*')
+        ]
+
+        filename = filedialog.askopenfilename(
+            title="Select your resume",
+            filetypes=file_types
+        )
+
+        if filename:
+            # Extract just the filename from the full path
+            display_name = os.path.basename(filename)
+            self.selected_file_var.set(f"✅ Selected: {display_name}")
+            self.selected_file = filename
+            self.file_label.config(style='Selected.TLabel')
+            self.analyze_btn.config(state='normal')
+        else:
+            self.selected_file_var.set("📄 No file selected")
+            self.file_label.config(style='Warning.TLabel')
+            self.analyze_btn.config(state='disabled')
+
+    def analyze_resume(self):
+        """Handle resume analysis with colorful feedback"""
+        if hasattr(self, 'selected_file'):
+            # Create a colorful message box
+            result = messagebox.showinfo(
+                "✅ Analysis Complete!",
+                f"🎉 Resume analysis completed for:\n{os.path.basename(self.selected_file)}\n\n"
+                "🚀 This is where you would implement your resume analysis logic.\n\n"
+                "📊 Your resume has been processed successfully!"
+            )
+        else:
+            messagebox.showwarning("⚠️ No File Selected", "📁 Please select a resume file first.")
+
+    def previous_screen(self):
+        """Go back to the previous screen"""
+        if self.current_screen > 0:
+            self.current_screen -= 1
+            # Reset the fact display when going back
+            if self.current_screen == 1:
+                self.show_fact = False
+            self.show_current_screen()
+
+def main():
+    root = tk.Tk()
+    app = ResumeReviewerApp(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
