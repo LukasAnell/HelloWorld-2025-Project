@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Reviewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #66D2FF;
+            --light-bg: #DFF6FF;
+            --alt-bg: #E8FBFF;
+            --divider-color: #F2FDFF;
+            --hover-color: #5bc8f9;
+            --button-color: #66D2FF;
+            --text-secondary: #6699AA;
+            --text-primary: #333;
+            --font-family: 'Roboto', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            background-color: var(--light-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Screen transitions */
+        .screen { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition: opacity 0.5s, transform 0.5s;}
+        .screen.active {opacity:1; pointer-events:auto;}
+        .screen.exit-left {transform:translateX(-100%); opacity:0;}
+        .screen.exit-right {transform:translateX(100%); opacity:0;}
+        .screen.enter-left {transform:translateX(-100%); opacity:0;}
+        .screen.enter-right {transform:translateX(100%); opacity:0;}
+        .screen.enter-left.active, .screen.enter-right.active {transform:translateX(0); opacity:1;}
+
+        /* Intro screen */
+        #intro-screen {display:flex; justify-content:center; align-items:center;}
+        .intro-box {background:white; padding:30px 40px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.12); max-width:700px; text-align:center;}
+        #intro-screen h1 {font-size:28px; font-weight:bold; margin:10px 0 20px; color:var(--primary-color);}
+        .intro-text {font-size:14px; line-height:1.6; margin-bottom:20px;}
+        #continue-btn {font-size:14px; font-weight:bold; color:white; background-color:var(--primary-color); border:none; border-radius:8px; cursor:pointer; padding:12px 28px; margin-top:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:0.3s;}
+        #continue-btn:hover {background-color:var(--hover-color); transform:translateY(-2px);}
+
+        /* Main app */
+        .app-container {width:100vw; height:100vh; display:flex; flex-direction:column; overflow:hidden;}
+        .app-header {padding:18px; text-align:center;}
+        .app-header h1 {font-size:24px; font-weight:bold; color:var(--primary-color); margin:5px 0;}
+        .app-header p {font-size:12px; color:var(--text-secondary); margin:0; line-height:1.6;}
+        .main-content {flex-grow:1; background-color:var(--alt-bg); margin:12px 22px; padding:15px; display:flex; align-items:stretch; border-radius:8px;}
+        .upload-pane {flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:12px;}
+        .separator {width:2px; background-color:var(--divider-color); margin:10px 0;}
+        .drop-zone {width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; text-align:center; transition:0.2s;}
+        .drop-zone.dragover {background-color:var(--light-bg); border-radius:12px; transform:scale(1.02);}
+        .drop-zone svg {width:150px; height:150px; margin-bottom:15px;}
+        .drop-zone h2 {font-size:22px; color:var(--primary-color); margin:5px 0;}
+        .upload-pane h3 {font-size:16px; font-weight:bold; color:var(--primary-color); margin:0 0 10px 0;}
+        .upload-pane p {font-size:11px; color:var(--text-secondary); margin:0 0 20px 0;}
+        .browse-btn {font-size:13px; font-weight:bold; background-color:var(--button-color); color:white; border:none; border-radius:6px; padding:12px 28px; cursor:pointer; transition:0.2s;}
+        .browse-btn:hover {background-color:var(--hover-color); transform:translateY(-1px);}
+        input[type="file"] {display:none;}
+
+        /* PDF viewer */
+        #pdf-canvas-container {flex-grow:1; overflow-y:auto; background-color:var(--alt-bg); padding:20px; box-sizing:border-box; width:100%; height:100%;}
+        #pdf-canvas-container canvas {display:block; margin:0 auto 15px; max-width:100%; height:auto; background-color:white; box-shadow:0 3px 10px rgba(0,0,0,0.12); transition:0.5s;}
+        .page-separator {height:5px; background-color:var(--divider-color); border:none; margin:10px 0;}
+        .viewer-buttons {padding:12px; display:flex; justify-content:space-between; background-color:var(--light-bg); border-top:1px solid var(--divider-color);}
+        .viewer-buttons button {font-size:13px; font-weight:bold; border:none; border-radius:6px; padding:10px 18px; cursor:pointer; transition:0.2s;}
+        .viewer-buttons .analyze-btn {background-color:var(--button-color); color:white;}
+        .viewer-buttons .analyze-btn:hover {background-color:var(--hover-color);}
+        .viewer-buttons .back-btn {background-color:var(--divider-color); color:var(--primary-color);}
+        .viewer-buttons .back-btn:hover {background-color:#eefaff;}
+
+        /* Analysis layout */
+        .analysis-mode {display:flex; flex-direction:row; width:100%; height:100%;}
+        .analysis-pane {height:100%; overflow-y:auto; transition:0.8s; padding:10px; box-sizing:border-box;}
+        .analysis-marked {flex:0; background-color:#fff; border-left:2px solid var(--divider-color); border-right:2px solid var(--divider-color);}
+        .analysis-comments {flex:0; background-color:var(--light-bg); border-left:2px solid var(--divider-color); padding:15px; font-size:14px; color:var(--text-secondary);}
+        .analysis-comments h3 {margin-top:0; font-size:16px; color:var(--primary-color);}
+    </style>
+</head>
+<body>
+
+<div id="intro-screen" class="screen">
+    <div class="intro-box">
+        <h1>Welcome to Resume Reviewer!</h1>
+        <p class="intro-text">Our AI model will apply the highest standards to your resume and help you improve it beyond a basic draft.</p>
+        <p class="intro-text" id="intro-text-2">
+            Did you know? Recruiters spend only 6–9 seconds scanning a resume before making a decision.<br><br>
+            Even before the recruiter sees your resume, it may pass through an Applicant Tracking System (ATS).
+            That’s why we focus on helping your content stand out, making sure your experiences and achievements
+            are highlighted in a way that captures attention.
+        </p>
+        <button id="continue-btn">Continue &gt;</button>
+    </div>
+</div>
+
+<div id="main-app-screen" class="screen">
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Welcome to AI Resume Reviewer</h1>
+            <p>Upload or drop your resume to:<br>✓ Review formatting ✓ Highlight strengths ✓ Suggest improvements ✓ Ensure ATS compatibility</p>
+        </header>
+        <main class="main-content">
+            <div class="upload-pane">
+                <div id="drop-zone" class="drop-zone">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" color="#66D2FF">
+                        <polyline points="16 16 12 12 8 16"></polyline>
+                        <line x1="12" y1="12" x2="12" y2="21"></line>
+                        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+                        <polyline points="16 16 12 12 8 16"></polyline>
+                    </svg>
+                    <h2>Drag and Drop</h2>
+                </div>
+            </div>
+            <div class="separator"></div>
+            <div class="upload-pane">
+                <h3>Or choose a file</h3>
+                <p>Supported: PDF only</p>
+                <button id="browse-btn" class="browse-btn">Browse Files</button>
+                <input type="file" id="file-input" accept=".pdf">
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="pdf-viewer-screen" class="screen">
+    <div class="app-container">
+        <main id="pdf-canvas-container"></main>
+        <footer class="viewer-buttons">
+            <button id="analyze-btn" class="analyze-btn">Analyze This File</button>
+            <button id="back-btn" class="back-btn">Back</button>
+        </footer>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const screens = { intro: document.getElementById('intro-screen'), main: document.getElementById('main-app-screen'), pdf: document.getElementById('pdf-viewer-screen')};
+        const continueBtn = document.getElementById('continue-btn');
+        const dropZone = document.getElementById('drop-zone');
+        const browseBtn = document.getElementById('browse-btn');
+        const fileInput = document.getElementById('file-input');
+        const pdfCanvasContainer = document.getElementById('pdf-canvas-container');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const backBtn = document.getElementById('back-btn');
+
+        let lastRenderedCanvases=[];
+
+        function switchScreen(from,to,d='forward'){
+            if(d==='forward'){
+                from.classList.add('exit-left'); from.classList.remove('active');
+                to.classList.add('enter-right');
+                setTimeout(()=>{from.classList.remove('exit-left'); to.classList.remove('enter-right'); to.classList.add('active');},500);
+            } else {
+                from.classList.add('exit-right'); from.classList.remove('active');
+                to.classList.add('enter-left');
+                setTimeout(()=>{from.classList.remove('exit-right'); to.classList.remove('enter-left'); to.classList.add('active');},500);
+            }
+        }
+
+        function showMainApp() {
+            localStorage.setItem('hasSeenIntro','true');
+            switchScreen(screens.intro, screens.main,'forward');
+        }
+
+        continueBtn.addEventListener('click', () => { showMainApp(); });
+
+        // Skip intro if already seen
+        if(localStorage.getItem('hasSeenIntro')) {
+            screens.intro.classList.remove('active');
+            screens.main.classList.add('active');
+        } else {
+            screens.intro.classList.add('active');
+        }
+
+        browseBtn.addEventListener('click',()=>fileInput.click());
+        fileInput.addEventListener('change', e=>{const file=e.target.files[0]; if(file) handleFile(file);});
+        dropZone.addEventListener('dragover', e=>{e.preventDefault(); dropZone.classList.add('dragover');});
+        dropZone.addEventListener('dragleave', ()=>{dropZone.classList.remove('dragover');});
+        dropZone.addEventListener('drop', e=>{e.preventDefault(); dropZone.classList.remove('dragover'); const file=e.dataTransfer.files[0]; if(file) handleFile(file);});
+
+        function handleFile(file){
+            if(file.type!=='application/pdf'){alert('Invalid File. Please select a PDF.'); return;}
+            fileInput.value=''; lastRenderedCanvases=[]; pdfCanvasContainer.className=''; pdfCanvasContainer.innerHTML='';
+            renderPdf(file); switchScreen(screens.main,screens.pdf,'forward');
+        }
+
+        backBtn.addEventListener('click', ()=>{pdfCanvasContainer.className=''; switchScreen(screens.pdf,screens.main,'back');});
+
+        async function renderPdf(file,targetPane=null){
+            if(!targetPane) pdfCanvasContainer.innerHTML='';
+            lastRenderedCanvases=[];
+            pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+            const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+            for(let i=1;i<=pdf.numPages;i++){
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({scale:1});
+                const scale = targetPane ? targetPane.clientWidth/viewport.width : 1.5;
+                const scaledViewport = page.getViewport({scale});
+                const canvas=document.createElement('canvas');
+                canvas.width=scaledViewport.width; canvas.height=scaledViewport.height;
+                await page.render({canvasContext:canvas.getContext('2d'), viewport:scaledViewport}).promise;
+                if(targetPane) targetPane.appendChild(canvas); else pdfCanvasContainer.appendChild(canvas);
+                lastRenderedCanvases.push(canvas);
+                if(!targetPane && i<pdf.numPages){ const sep=document.createElement('hr'); sep.className='page-separator'; pdfCanvasContainer.appendChild(sep);}
+            }
+        }
+
+        analyzeBtn.addEventListener('click', ()=>{
+            pdfCanvasContainer.innerHTML='';
+            pdfCanvasContainer.classList.add('analysis-mode');
+
+            const markedPane = document.createElement('div');
+            markedPane.className = 'analysis-pane analysis-marked';
+            markedPane.innerHTML = '<h3 style="text-align:center;color:var(--primary-color);">Marked-up Resume</h3>';
+
+            const commentsPane = document.createElement('div');
+            commentsPane.className = 'analysis-pane analysis-comments';
+            commentsPane.style.display = 'flex';
+            commentsPane.style.flexDirection = 'column';
+
+            const scoreBox = document.createElement('div');
+            scoreBox.style.flex='0 0 20%';
+            scoreBox.style.backgroundColor='#fff';
+            scoreBox.style.borderRadius='6px';
+            scoreBox.style.padding='10px';
+            scoreBox.style.marginBottom='10px';
+            scoreBox.innerHTML=`<h3 style="color:var(--primary-color); margin:0 0 5px 0;">Total Score: 20/25</h3>`;
+
+            const rubricContainer = document.createElement('div');
+            const criteria = [
+                {name:"Content / Relevance", score:4, max:5},
+                {name:"Achievements / Results", score:4, max:5},
+                {name:"Skills / Keywords", score:4, max:5},
+                {name:"Organization / Formatting", score:4, max:5},
+                {name:"Professionalism", score:4, max:5}
+            ];
+
+            criteria.forEach(c=>{
+                const row = document.createElement('div');
+                row.style.display='flex';
+                row.style.alignItems='center';
+                row.style.marginBottom='4px';
+
+                const label = document.createElement('span');
+                label.textContent = `${c.name}: `;
+                label.style.flex='0 0 45%';
+                label.style.fontSize='12px';
+                label.style.color='#333';
+
+                const barContainer = document.createElement('div');
+                barContainer.style.flex='1';
+                barContainer.style.backgroundColor='#e0e0e0';
+                barContainer.style.height='8px';
+                barContainer.style.borderRadius='4px';
+                barContainer.style.overflow='hidden';
+                barContainer.style.marginRight='8px';
+
+                const bar = document.createElement('div');
+                bar.style.width = `${(c.score/c.max)*100}%`;
+                bar.style.height='100%';
+                bar.style.backgroundColor='#66D2FF';
+                bar.style.borderRadius='4px';
+
+                barContainer.appendChild(bar);
+
+                const scoreText = document.createElement('span');  // Added numeric score
+                scoreText.textContent = `${c.score}/${c.max}`;
+                scoreText.style.fontSize = '12px';
+                scoreText.style.color = '#333';
+                scoreText.style.flex = '0 0 35px'; // fixed width for alignment
+                scoreText.style.textAlign = 'right';
+
+                row.appendChild(label);
+                row.appendChild(barContainer);
+                row.appendChild(scoreText);  // append numeric score
+                rubricContainer.appendChild(row);
+            });
+
+
+            scoreBox.appendChild(rubricContainer);
+
+            const commentsBox = document.createElement('div');
+            commentsBox.style.flex='1';
+            commentsBox.style.overflowY='auto';
+            commentsBox.innerHTML=`<h3>Comments</h3>
+        <ul>
+            <li>Highlight achievements more clearly.</li>
+            <li>Consider reformatting Education section.</li>
+            <li>Add stronger action verbs.</li>
+        </ul>`;
+
+            commentsPane.appendChild(scoreBox);
+            commentsPane.appendChild(commentsBox);
+
+            pdfCanvasContainer.appendChild(markedPane);
+            pdfCanvasContainer.appendChild(commentsPane);
+
+            setTimeout(()=>{
+                markedPane.style.flex='0.66';
+                commentsPane.style.flex='0.34';
+                lastRenderedCanvases.forEach(c=>markedPane.appendChild(c.cloneNode(true)));
+            },50);
+        });
+
+    });
+</script>
+</body>
+</html>
