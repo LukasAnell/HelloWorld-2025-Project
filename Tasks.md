@@ -11,3 +11,4 @@
      - Conciseness score? longer than a page, does the text ramble, bullet points
      - Relevance? If you're applying to a robotics company then robotics experience should be at the top
      - Section by section analysis
+     - prompt the user which company / club are you applying to / what do they do?
