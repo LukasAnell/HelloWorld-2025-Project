@@ -173,12 +173,12 @@
         continueBtn.addEventListener('click', () => { showMainApp(); });
 
         // Skip intro if already seen
-        if(localStorage.getItem('hasSeenIntro')) {
-            screens.intro.classList.remove('active');
-            screens.main.classList.add('active');
-        } else {
+        // if(localStorage.getItem('hasSeenIntro')) {
+        //     screens.intro.classList.remove('active');
+        //     screens.main.classList.add('active');
+        // } else {
             screens.intro.classList.add('active');
-        }
+        //}
 
         browseBtn.addEventListener('click',()=>fileInput.click());
         fileInput.addEventListener('change', e=>{const file=e.target.files[0]; if(file) handleFile(file);});
