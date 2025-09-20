@@ -65,6 +65,14 @@
         .browse-btn {font-size:13px; font-weight:bold; background-color:var(--button-color); color:white; border:none; border-radius:6px; padding:12px 28px; cursor:pointer; transition:0.2s;}
         .browse-btn:hover {background-color:var(--hover-color); transform:translateY(-1px);}
         input[type="file"] {display:none;}
+        
+        /* Styles for Sample Files Section */
+        .sample-files-container { margin-top: 30px; text-align: center; width: 100%;}
+        .sample-files-container h4 { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; font-weight: normal; }
+        .sample-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .sample-btn { font-size: 12px; background-color: white; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 6px; padding: 8px 16px; cursor: pointer; transition: 0.2s; }
+        .sample-btn:hover { background-color: var(--divider-color); transform: translateY(-1px); }
+        .sample-btn:disabled { cursor: not-allowed; opacity: 0.6; }
 
         /* PDF viewer */
         #pdf-canvas-container {flex-grow:1; overflow-y:auto; background-color:var(--alt-bg); padding:20px; box-sizing:border-box; width:100%; height:100%;}
@@ -125,6 +133,15 @@
                 <p>Supported: PDF only</p>
                 <button id="browse-btn" class="browse-btn">Browse Files</button>
                 <input type="file" id="file-input" accept=".pdf">
+                <div class="sample-files-container">
+                    <h4>Or use a sample file:</h4>
+                    <div class="sample-buttons">
+                        <button class="sample-btn" data-filename="nonresume.pdf">Non-Resume</button>
+                        <button class="sample-btn" data-filename="bad.pdf">Bad</button>
+                        <button class="sample-btn" data-filename="mid.pdf">Mid</button>
+                        <button class="sample-btn" data-filename="good.pdf">Good</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -150,6 +167,7 @@
         const pdfCanvasContainer = document.getElementById('pdf-canvas-container');
         const analyzeBtn = document.getElementById('analyze-btn');
         const backBtn = document.getElementById('back-btn');
+        const sampleBtns = document.querySelectorAll('.sample-btn');
 
         let lastRenderedCanvases=[];
 
@@ -172,7 +190,6 @@
 
         continueBtn.addEventListener('click', () => { showMainApp(); });
 
-        // Skip intro if already seen
         if(localStorage.getItem('hasSeenIntro')) {
             screens.intro.classList.remove('active');
             screens.main.classList.add('active');
@@ -212,6 +229,37 @@
                 if(!targetPane && i<pdf.numPages){ const sep=document.createElement('hr'); sep.className='page-separator'; pdfCanvasContainer.appendChild(sep);}
             }
         }
+        
+        // Handle sample file clicks
+        async function handleSampleFileClick(e) {
+            const btn = e.target;
+            const filename = btn.dataset.filename;
+            if (!filename) return;
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Loading...';
+
+            try {
+                const response = await fetch(filename);
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok. Status: ${response.status}`);
+                }
+                const blob = await response.blob();
+                const file = new File([blob], filename, { type: 'application/pdf' });
+                handleFile(file);
+            } catch (error) {
+                console.error('Error fetching sample file:', error);
+                alert(`Could not load sample file: ${filename}.\n\nEnsure it's in the same directory as this HTML file and that you are running this from a web server.`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+        
+        sampleBtns.forEach(btn => {
+            btn.addEventListener('click', handleSampleFileClick);
+        });
 
         analyzeBtn.addEventListener('click', ()=>{
             pdfCanvasContainer.innerHTML='';
@@ -271,19 +319,18 @@
 
                 barContainer.appendChild(bar);
 
-                const scoreText = document.createElement('span');  // Added numeric score
+                const scoreText = document.createElement('span');
                 scoreText.textContent = `${c.score}/${c.max}`;
                 scoreText.style.fontSize = '12px';
                 scoreText.style.color = '#333';
-                scoreText.style.flex = '0 0 35px'; // fixed width for alignment
+                scoreText.style.flex = '0 0 35px';
                 scoreText.style.textAlign = 'right';
 
                 row.appendChild(label);
                 row.appendChild(barContainer);
-                row.appendChild(scoreText);  // append numeric score
+                row.appendChild(scoreText);
                 rubricContainer.appendChild(row);
             });
-
 
             scoreBox.appendChild(rubricContainer);
 
