@@ -198,3 +198,4 @@ def open_pdf_viewer(file_path, parent_root):
 
 # ---- Start App ----
 open_first_window()
+
