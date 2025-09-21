@@ -3,10 +3,10 @@ resumereviewer.lukasanell.org {
     encode gzip zstd
 
     route {
-        handle /analyze* {
+        handle_path /analyze* {
             reverse_proxy backend:5001
         }
-        handle /health {
+        handle_path /health* {
             reverse_proxy backend:5001
         }
         handle_path /ollama* {
