@@ -1,33 +1,30 @@
 services:
-  frontend:
-    build: ./  # Assumes your Dockerfile is in the project root
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: helloworld_web:latest
+    restart: unless-stopped
+    networks:
+      - webnet
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
     ports:
-      - "3000:80"
-    expose:
-      - "80"
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
-  backend:
-    image: python:3.11-alpine
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./backend:/app
-    working_dir: /app
-    command: python app.py
-    environment:
-      - OLLAMA_URL=http://ollama:11434
-    depends_on:
-      - ollama
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
-      - app-network
+      - webnet
 
-  ollama:
-    image: ollama/ollama:latest
-    networks:
-      - app-network
+volumes:
+  caddy_data:
+  caddy_config:
 
 networks:
-  app-network:
-    driver: bridge
+  webnet:
