@@ -1,10 +1,22 @@
 # src/app.py
+<<<<<<< HEAD
+=======
+import os
+import json
+import logging
+
+import requests
+>>>>>>> 3731600 (Add error handling and logging to resume analysis endpoint)
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
+
+# Configure basic logging
+logging.basicConfig(level=logging.INFO)
+logger = app.logger
 
 # CORS: allow the production domain and common local dev origins
 ALLOWED_ORIGINS = os.environ.get(
@@ -22,13 +34,30 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 
+@app.errorhandler(404)
+def handle_404(e):
+    return jsonify({"error": "Not Found"}), 404
+
+
+@app.errorhandler(405)
+def handle_405(e):
+    return jsonify({"error": "Method Not Allowed"}), 405
+
+
+@app.errorhandler(500)
+def handle_500(e):
+    logger.exception("Unhandled server error: %s", e)
+    # Do not leak internals in production; include message for debugging
+    return jsonify({"error": "Internal Server Error", "detail": str(e)}), 500
+
+
 @app.route('/analyze', methods=['POST'])
 def analyze_resume():
     """
     Receives resume text from the frontend, sends it to Ollama for analysis,
     and returns the analysis to the frontend.
     """
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data or 'text' not in data:
         return jsonify({"error": "No text provided"}), 400
 
@@ -41,6 +70,20 @@ def analyze_resume():
     Resume Rubric
     There are 5 categories separated by the '/' character with a maximum score of 5 points for each category for a total of 25 points.
 
+<<<<<<< HEAD
+=======
+    Required JSON schema:
+    {{
+      "scores": [
+        {{"name": "Content / Relevance", "score": 0, "max": 5}},
+        {{"name": "Achievements / Results", "score": 0, "max": 5}},
+        {{"name": "Skills / Keywords", "score": 0, "max": 5}},
+        {{"name": "Organization / Formatting", "score": 0, "max": 5}},
+        {{"name": "Professionalism", "score": 0, "max": 5}}
+      ],
+      "comments": ["string", "string", "..."]
+    }}
+>>>>>>> 3731600 (Add error handling and logging to resume analysis endpoint)
 
 Content/
 Relevance
@@ -112,6 +155,7 @@ Completely error-free, professional tone throughout, up-to-date, polished, and s
     Rubric:
     """
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 =======
     # Truncate very large resumes to avoid long tokenize time
@@ -134,18 +178,53 @@ Completely error-free, professional tone throughout, up-to-date, polished, and s
             "format": "json",  # Request JSON output from Ollama
             "stream": False
         }
+=======
+    # The payload to send to Ollama's API
+    ollama_payload = {
+        "model": MODEL_NAME,  # Configurable via env
+        "prompt": prompt,
+        "format": "json",  # Request JSON output from Ollama
+        "stream": False
+    }
+>>>>>>> Stashed changes
 
-        # Forward the request to the Ollama container
-        response = requests.post(f"{OLLAMA_URL}/api/generate", json=ollama_payload)
-        response.raise_for_status()  # Raise an exception for bad status codes
+    try:
+        # Forward the request to the Ollama container (with timeout)
+        response = requests.post(f"{OLLAMA_URL}/api/generate", json=ollama_payload, timeout=120)
+        try:
+            response.raise_for_status()  # Raise an exception for bad status codes
+        except requests.exceptions.HTTPError as http_err:
+            body = None
+            try:
+                body = response.text
+            except Exception:
+                body = None
+            logger.warning("Ollama HTTP error: %s; status=%s; body_snippet=%s", http_err, getattr(response, 'status_code', None), (body or '')[:500])
+            return jsonify({
+                "error": "Upstream LLM error",
+                "status": getattr(response, 'status_code', None),
+                "body": (body or '')[:1000]
+            }), 502
 
         # Ollama returns the JSON response as a string in the 'response' key
         analysis_result = response.json()
+<<<<<<< HEAD
         return analysis_result['response'], 200, {'Content-Type': 'application/json'}
+=======
+        raw = analysis_result.get('response', '')
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+        except Exception as je:
+            logger.warning("Model returned invalid JSON: %s; raw_snippet=%s", je, str(raw)[:500])
+            return jsonify({"error": "Model returned invalid JSON", "detail": str(je), "raw": raw}), 502
+        return jsonify(parsed), 200
+>>>>>>> 3731600 (Add error handling and logging to resume analysis endpoint)
 
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"Could not connect to Ollama service: {e}"}), 500
+        logger.error("Could not connect to Ollama service: %s", e)
+        return jsonify({"error": f"Could not connect to Ollama service: {e}"}), 502
     except Exception as e:
+        logger.exception("Unexpected error during analysis: %s", e)
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 
