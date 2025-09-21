@@ -31,7 +31,6 @@
             height: 100vh;
         }
 
-        /* Screen transitions */
         .screen { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition: opacity 0.5s, transform 0.5s;}
         .screen.active {opacity:1; pointer-events:auto;}
         .screen.exit-left {transform:translateX(-100%); opacity:0;}
@@ -40,7 +39,6 @@
         .screen.enter-right {transform:translateX(100%); opacity:0;}
         .screen.enter-left.active, .screen.enter-right.active {transform:translateX(0); opacity:1;}
 
-        /* Intro screen */
         #intro-screen {display:flex; justify-content:center; align-items:center;}
         .intro-box {background:white; padding:30px 40px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.12); max-width:700px; text-align:center;}
         #intro-screen h1 {font-size:28px; font-weight:bold; margin:10px 0 20px; color:var(--primary-color);}
@@ -48,7 +46,6 @@
         #continue-btn {font-size:14px; font-weight:bold; color:white; background-color:var(--primary-color); border:none; border-radius:8px; cursor:pointer; padding:12px 28px; margin-top:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:0.3s;}
         #continue-btn:hover {background-color:var(--hover-color); transform:translateY(-2px);}
 
-        /* Main app */
         .app-container {width:100vw; height:100vh; display:flex; flex-direction:column; overflow:hidden;}
         .app-header {padding:18px; text-align:center;}
         .app-header h1 {font-size:24px; font-weight:bold; color:var(--primary-color); margin:5px 0;}
@@ -66,15 +63,6 @@
         .browse-btn:hover {background-color:var(--hover-color); transform:translateY(-1px);}
         input[type="file"] {display:none;}
 
-        /* Styles for Sample Files Section */
-        .sample-files-container { margin-top: 30px; text-align: center; width: 100%;}
-        .sample-files-container h4 { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; font-weight: normal; }
-        .sample-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .sample-btn { font-size: 12px; background-color: white; color: var(--primary-color); border: 1px solid var(--primary-color); border-radius: 6px; padding: 8px 16px; cursor: pointer; transition: 0.2s; }
-        .sample-btn:hover { background-color: var(--divider-color); transform: translateY(-1px); }
-        .sample-btn:disabled { cursor: not-allowed; opacity: 0.6; }
-
-        /* PDF viewer */
         #pdf-canvas-container {flex-grow:1; overflow-y:auto; background-color:var(--alt-bg); padding:20px; box-sizing:border-box; width:100%; height:100%;}
         #pdf-canvas-container canvas {display:block; margin:0 auto 15px; max-width:100%; height:auto; background-color:white; box-shadow:0 3px 10px rgba(0,0,0,0.12); transition:0.5s;}
         .page-separator {height:5px; background-color:var(--divider-color); border:none; margin:10px 0;}
@@ -85,7 +73,6 @@
         .viewer-buttons .back-btn {background-color:var(--divider-color); color:var(--primary-color);}
         .viewer-buttons .back-btn:hover {background-color:#eefaff;}
 
-        /* Analysis layout */
         .analysis-mode {display:flex; flex-direction:row; width:100%; height:100%;}
         .analysis-pane {height:100%; overflow-y:auto; transition:0.8s; padding:10px; box-sizing:border-box;}
         .analysis-marked {flex:0; background-color:#fff; border-left:2px solid var(--divider-color); border-right:2px solid var(--divider-color);}
@@ -93,56 +80,19 @@
         .analysis-comments h3 {margin-top:0; font-size:16px; color:var(--primary-color);}
 
         @media (max-width: 768px) {
-            body {
-                overflow: auto;
-            }
-
-            .main-content {
-                flex-direction: column;
-                margin: 10px;
-            }
-
-            .upload-pane {
-                width: 100%;
-                margin-bottom: 12px;
-            }
-
-            .separator {
-                display: none;
-            }
-
-            #pdf-canvas-container {
-                height: calc(100vh - 60px - 50px); /* account for header/footer */
-                padding: 10px;
-                overflow-y: auto;
-            }
-
+            body {overflow: auto;}
+            .main-content {flex-direction: column; margin:10px;}
+            .upload-pane {width: 100%; margin-bottom: 12px;}
+            .separator {display:none;}
+            #pdf-canvas-container {height: calc(100vh - 60px - 50px); /* account for header/footer */
+                padding:10px; overflow-y:auto;}
             .viewer-buttons {
-                position: sticky;
-                bottom: 0;
-                width: 100%;
-                display: flex;
-                justify-content: space-between;
-                padding: 8px;
-                box-sizing: border-box;
+                position: sticky; bottom:0; width:100%; display:flex; justify-content:space-between; padding:8px; box-sizing:border-box;
             }
-
-            .analysis-mode {
-                flex-direction: column;
-            }
-
-            .analysis-pane {
-                width: 100%;
-                border: none;
-                padding: 8px;
-            }
-            .analysis-marked {
-                margin-bottom: 12px;
-            }
-            .analysis-comments {
-                margin-bottom: 12px;
-            }
-        }
+            .analysis-mode {flex-direction: column;}
+            .analysis-pane {width: 100%; border:none; padding:8px;}
+            .analysis-marked {margin-bottom:12px;}
+            .analysis-comments {margin-bottom:12px;}
     </style>
 </head>
 <body>
@@ -185,15 +135,6 @@
                 <p>Supported: PDF only</p>
                 <button id="browse-btn" class="browse-btn">Browse Files</button>
                 <input type="file" id="file-input" accept=".pdf">
-                <div class="sample-files-container">
-                    <h4>Or use a sample file:</h4>
-                    <div class="sample-buttons">
-                        <button class="sample-btn" data-filename="./images/nonresume.pdf">Non-Resume</button>
-                        <button class="sample-btn" data-filename="./images/bad.pdf">Bad</button>
-                        <button class="sample-btn" data-filename="./images/mid.pdf">Mid</button>
-                        <button class="sample-btn" data-filename="./images/good.pdf">Good</button>
-                    </div>
-                </div>
             </div>
         </main>
     </div>
@@ -219,8 +160,6 @@
         const pdfCanvasContainer = document.getElementById('pdf-canvas-container');
         const analyzeBtn = document.getElementById('analyze-btn');
         const backBtn = document.getElementById('back-btn');
-        const sampleBtns = document.querySelectorAll('.sample-btn');
-
         let lastRenderedCanvases=[];
 
         function switchScreen(from,to,d='forward'){
@@ -240,14 +179,8 @@
             switchScreen(screens.intro, screens.main,'forward');
         }
 
-        continueBtn.addEventListener('click', () => { showMainApp(); });
-
-        if(localStorage.getItem('hasSeenIntro')) {
-            screens.intro.classList.remove('active');
-            screens.main.classList.add('active');
-        } else {
-            screens.intro.classList.add('active');
-        }
+        continueBtn.addEventListener('click', showMainApp);
+        screens.intro.classList.add('active');
 
         browseBtn.addEventListener('click',()=>fileInput.click());
         fileInput.addEventListener('change', e=>{const file=e.target.files[0]; if(file) handleFile(file);});
@@ -255,10 +188,11 @@
         dropZone.addEventListener('dragleave', ()=>{dropZone.classList.remove('dragover');});
         dropZone.addEventListener('drop', e=>{e.preventDefault(); dropZone.classList.remove('dragover'); const file=e.dataTransfer.files[0]; if(file) handleFile(file);});
 
-        function handleFile(file){
+        async function handleFile(file){
             if(file.type!=='application/pdf'){alert('Invalid File. Please select a PDF.'); return;}
             fileInput.value=''; lastRenderedCanvases=[]; pdfCanvasContainer.className=''; pdfCanvasContainer.innerHTML='';
-            renderPdf(file); switchScreen(screens.main,screens.pdf,'forward');
+            await renderPdf(file);
+            switchScreen(screens.main,screens.pdf,'forward');
         }
 
         backBtn.addEventListener('click', ()=>{pdfCanvasContainer.className=''; switchScreen(screens.pdf,screens.main,'back');});
@@ -267,7 +201,8 @@
             if(!targetPane) pdfCanvasContainer.innerHTML='';
             lastRenderedCanvases=[];
             pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-            const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+            const arrayBuffer = await file.arrayBuffer(); // Firefox-friendly
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
             for(let i=1;i<=pdf.numPages;i++){
                 const page = await pdf.getPage(i);
                 const viewport = page.getViewport({scale:1});
@@ -281,37 +216,6 @@
                 if(!targetPane && i<pdf.numPages){ const sep=document.createElement('hr'); sep.className='page-separator'; pdfCanvasContainer.appendChild(sep);}
             }
         }
-
-        // Handle sample file clicks
-        async function handleSampleFileClick(e) {
-            const btn = e.target;
-            const filename = btn.dataset.filename;
-            if (!filename) return;
-
-            btn.disabled = true;
-            const originalText = btn.textContent;
-            btn.textContent = 'Loading...';
-
-            try {
-                const response = await fetch(filename);
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok. Status: ${response.status}`);
-                }
-                const blob = await response.blob();
-                const file = new File([blob], filename, { type: 'application/pdf' });
-                handleFile(file);
-            } catch (error) {
-                console.error('Error fetching sample file:', error);
-                alert(`Could not load sample file: ${filename}.\n\nEnsure it's in the same directory as this HTML file and that you are running this from a web server.`);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        }
-
-        sampleBtns.forEach(btn => {
-            btn.addEventListener('click', handleSampleFileClick);
-        });
 
         analyzeBtn.addEventListener('click', ()=>{
             pdfCanvasContainer.innerHTML='';
@@ -408,7 +312,6 @@
                 lastRenderedCanvases.forEach(c=>markedPane.appendChild(c.cloneNode(true)));
             },50);
         });
-
     });
 </script>
 </body>

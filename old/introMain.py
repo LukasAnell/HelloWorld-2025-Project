@@ -176,10 +176,10 @@ class ResumeReviewerApp:
         Gradually changes the widget's foreground color to match the background.
         """
 
-            hex_color = f'#{current_shade:02x}{current_shade:02x}{current_shade:02x}'
-            widget.config(fg=hex_color)
-            self.root.after(10, lambda: self.fade_out(widget, current_shade + 5, callback))
-        elif callback:
+        hex_color = f'#{current_shade:02x}{current_shade:02x}{current_shade:02x}'
+        widget.config(fg=hex_color)
+        self.root.after(10, lambda: self.fade_out(widget, current_shade + 5, callback))
+        if callback:
             callback()
 
 def main():

@@ -1,13 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
-import os
-import sys
 from PIL import Image, ImageTk
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import fitz  # PyMuPDF
 
-# ===== GLOBAL SETTINGS (from main.py) =====
-# These settings will be used for the main application window after the intro.
+# ===== GLOBAL SETTINGS =====
 global_img_ref = None
 MAX_WIDTH, MAX_HEIGHT = 500, 300
 header_font = ('Roboto', 22, 'bold')
@@ -25,13 +22,8 @@ hover_color = "#66D2FF"        # hover with primary
 button_color = "#66D2FF"       # main button color
 text_secondary = "#6699AA"     # gentle darker text
 
-# ===== MAIN APPLICATION UI FUNCTIONS (from main.py) =====
-
+# ===== FIRST WINDOW =====
 def open_first_window():
-    """
-    Creates and displays the main resume reviewer window.
-    This is the primary interface for file uploading.
-    """
     root = TkinterDnD.Tk()
     root.title("AI Resume Reviewer")
     root.geometry("950x650")
@@ -74,7 +66,7 @@ def open_first_window():
     main_frame.grid_columnconfigure(2, weight=1)
     main_frame.grid_rowconfigure(0, weight=1)
 
-    # ---- Left Pane (Drag & Drop) ----
+    # ---- Left Pane ----
     left_pane = tk.Frame(main_frame, bg=alt_bg)
     left_pane.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
     left_pane.grid_rowconfigure(0, weight=1)
@@ -88,9 +80,8 @@ def open_first_window():
 
     global global_img_ref
     try:
-        # NOTE: Ensure 'image-removebg-preview.png' is in the same directory
         img = Image.open("image-removebg-preview.png")
-        img.thumbnail((MAX_WIDTH, MAX_HEIGHT), Image.Resampling.LANCZOS)
+        img.thumbnail((MAX_WIDTH, MAX_HEIGHT), Image.LANCZOS)
         global_img_ref = ImageTk.PhotoImage(img)
         image_label = tk.Label(center_frame, image=global_img_ref, bg=alt_bg)
     except FileNotFoundError:
@@ -106,7 +97,7 @@ def open_first_window():
     separator = tk.Canvas(main_frame, width=2, bg=divider_color, highlightthickness=0)
     separator.grid(row=0, column=1, sticky="ns", pady=10)
 
-    # ---- Right Pane (Browse Button) ----
+    # ---- Right Pane ----
     right_pane = tk.Frame(main_frame, bg=alt_bg)
     right_pane.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
     right_pane.grid_rowconfigure(0, weight=1)
@@ -125,10 +116,9 @@ def open_first_window():
 
     root.mainloop()
 
+
+# ===== PDF VIEWER =====
 def open_pdf_viewer(file_path, parent_root):
-    """
-    Opens a new window to display the selected PDF file.
-    """
     parent_root.destroy()
     viewer = tk.Tk()
     viewer.title("PDF Viewer")
@@ -162,6 +152,7 @@ def open_pdf_viewer(file_path, parent_root):
         page_frame.pack(pady=10, fill="both")
         tk.Label(page_frame, image=img_tk, bg=alt_bg).pack(pady=5)
 
+        # Add separator between pages
         if i < len(doc):
             separator = tk.Frame(scrollable_frame, height=5, bg=divider_color)
             separator.pack(fill="x", pady=5)
@@ -205,136 +196,6 @@ def open_pdf_viewer(file_path, parent_root):
     viewer.mainloop()
 
 
-# ===== INTRODUCTORY UI CLASS (from introMain.py) =====
+# ---- Start App ----
+open_first_window()
 
-class ResumeReviewerApp:
-    """
-    Handles the initial welcome screen with a fade-in effect.
-    This screen is only shown on the first launch.
-    """
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Welcome")
-        self.root.geometry("800x400")
-        self.root.configure(bg='#f0f0f0')
-        self.root.resizable(False, False)
-        self.state = 0  # 0 for initial screen, 1 for info screen
-
-        self.config_path = self.get_config_path()
-        self.config_file_path = os.path.join(self.config_path, "AlreadyLoaded.txt")
-        self.center_window()
-
-        self.main_frame = tk.Frame(root, bg=self.root.cget('bg'))
-        self.main_frame.pack(expand=True)
-
-        if not self.check_already_loaded():
-            self.setup_initial_ui()
-            self.start_initial_animations()
-        else:
-            self.setup_final_ui()
-
-    def get_config_path(self):
-        app_name = "ResumeReviewer"
-        if sys.platform == 'win32':
-            path = os.path.join(os.getenv('APPDATA'), app_name)
-        elif sys.platform == 'darwin':
-            path = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', app_name)
-        else:
-            path = os.path.join(os.path.expanduser('~'), '.config', app_name)
-        os.makedirs(path, exist_ok=True)
-        return path
-
-    def check_already_loaded(self):
-        if os.path.exists(self.config_file_path):
-            try:
-                with open(self.config_file_path, "r") as f:
-                    return f.read().strip() == "true"
-            except IOError:
-                return False
-        return False
-
-    def setup_initial_ui(self):
-        initial_fg = self.root.cget('bg')
-        self.header_label = tk.Label(self.main_frame, text="Welcome to Resume Reviewer!", font=("Roboto", 26, "bold"), fg=initial_fg, bg=self.root.cget('bg'))
-        self.header_label.pack(pady=(10, 20), padx=20)
-        self.text_label = tk.Label(self.main_frame, text="Our AI model will apply the highest standards to your resume\nand help you improve it beyond a basic draft", font=("Roboto", 14), fg=initial_fg, bg=self.root.cget('bg'), justify=tk.CENTER)
-        self.text_label.pack(pady=10, padx=20)
-        self.info_label = tk.Label(self.main_frame, text="Did you know? Recruiters spend only 6–9 seconds scanning a resume before making a decision.\n\nEven before the recruiter sees your resume, it may pass through an Applicant Tracking System (ATS). That’s why we focus on helping your content stand out, making sure your experiences and achievements are highlighted in a way that captures attention.", font=("Roboto", 14), fg=initial_fg, bg=self.root.cget('bg'), justify=tk.CENTER, wraplength=700)
-        self.continue_button = tk.Button(self.main_frame, text="Continue >", font=("Roboto", 14, "bold"), fg=initial_fg, bg=self.root.cget('bg'), activebackground=self.root.cget('bg'), activeforeground='#000000', bd=0, highlightthickness=0, cursor="hand2", command=self.on_continue_click)
-        self.continue_button.pack(pady=20)
-
-    def start_initial_animations(self):
-        self.fade_in(self.header_label, 240)
-        self.root.after(1000, lambda: self.fade_in(self.text_label, 240))
-        self.root.after(2000, lambda: self.fade_in(self.continue_button, 240))
-
-    def setup_final_ui(self):
-        """
-        Destroys the intro window and launches the main application UI.
-        This function serves as the transition point.
-        """
-        self.root.destroy()
-        open_first_window()
-
-    def on_continue_click(self):
-        self.continue_button.config(state=tk.DISABLED)
-        if self.state == 0:
-            def after_fade_out():
-                self.text_label.pack_forget()
-                self.info_label.pack(pady=10, padx=20, before=self.continue_button)
-                self.fade_in(self.info_label, 240)
-                self.root.after(500, lambda: self.fade_in(self.continue_button, 240, callback=lambda: self.continue_button.config(state=tk.NORMAL)))
-                self.state = 1
-            self.fade_out(self.text_label, 0)
-            self.fade_out(self.continue_button, 0, callback=after_fade_out)
-        elif self.state == 1:
-            def after_fade_out():
-                self.write_load_file()
-                self.setup_final_ui()
-            self.fade_out(self.header_label, 0)
-            self.fade_out(self.info_label, 0)
-            self.fade_out(self.continue_button, 0, callback=after_fade_out)
-
-    def write_load_file(self):
-        try:
-            with open(self.config_file_path, "w") as f:
-                f.write("true")
-        except IOError as e:
-            print(f"Error writing to config file: {e}")
-
-    def center_window(self):
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
-
-    def fade_in(self, widget, current_shade, callback=None):
-        if current_shade >= 0:
-            hex_color = f'#{current_shade:02x}{current_shade:02x}{current_shade:02x}'
-            widget.config(fg=hex_color)
-            self.root.after(15, lambda: self.fade_in(widget, current_shade - 5, callback))
-        elif callback:
-            callback()
-
-    def fade_out(self, widget, current_shade, callback=None):
-        if current_shade <= 240:
-            hex_color = f'#{current_shade:02x}{current_shade:02x}{current_shade:02x}'
-            widget.config(fg=hex_color)
-            self.root.after(10, lambda: self.fade_out(widget, current_shade + 5, callback))
-        elif callback:
-            callback()
-
-# ===== APPLICATION ENTRY POINT =====
-
-def main():
-    """
-    Creates the root window for the intro and starts the app.
-    """
-    root = tk.Tk()
-    app = ResumeReviewerApp(root)
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()
