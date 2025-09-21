@@ -11,10 +11,11 @@ log = app.logger
 # Config (env overrides)
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434")
 MODEL_NAME = os.environ.get("MODEL_NAME", "llama3:8b")
-MAX_RESUME_CHARS = int(os.environ.get("MAX_RESUME_CHARS", "9000"))
-NUM_PREDICT = int(os.environ.get("NUM_PREDICT", "280"))
+MAX_RESUME_CHARS = int(os.environ.get("MAX_RESUME_CHARS", "6000"))
+NUM_PREDICT = int(os.environ.get("NUM_PREDICT", "170"))
 REQUEST_TIMEOUT = int(os.environ.get("REQUEST_TIMEOUT", "90"))
 STREAM = os.environ.get("OLLAMA_STREAM", "false").lower() == "true"
+CACHE_SIZE = int(os.environ.get("CACHE_SIZE", "64"))
 WARM_TIMEOUT = int(os.environ.get("WARM_TIMEOUT", "240"))
 WARM_PROMPT = os.environ.get("WARM_PROMPT", "Short warmup.")
 session = requests.Session()
@@ -25,62 +26,6 @@ ALLOWED_ORIGINS = os.environ.get(
     "https://resumereviewer.lukasanell.org,http://localhost:5001,http://localhost:8080,http://127.0.0.1:8080,http://localhost"
 ).split(",")
 CORS(app, resources={r"/analyze": {"origins": ALLOWED_ORIGINS}})
-
-
-def _poll_generation():
-    payload = {
-        "model": MODEL_NAME,
-        "prompt": WARM_PROMPT,
-        "stream": False,
-        "options": {"num_predict": 8}
-    }
-    r = session.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=60)
-    return r
-
-def _pull_model():
-    r = session.post(f"{OLLAMA_URL}/api/pull", json={"model": MODEL_NAME}, timeout=600, stream=True)
-    if r.status_code != 200:
-        raise RuntimeError(f"Pull failed: {r.status_code} {r.text[:300]}")
-    # Consume stream (progress events) until done
-    for line in r.iter_lines():
-        if not line:
-            continue
-        if b'"status":"success"' in line or b'"status":"ready"' in line:
-            break
-
-def warm_model():
-    log.info("Warming model %s ...", MODEL_NAME)
-    start = time.time()
-    try:
-        # Quick version check (optional)
-        try:
-            v = session.get(f"{OLLAMA_URL}/api/version", timeout=5)
-            v.raise_for_status()
-        except Exception as e:
-            log.warning("Version check failed: %s", e)
-
-        attempt = 0
-        while time.time() - start < WARM_TIMEOUT:
-            attempt += 1
-            try:
-                resp = _poll_generation()
-                if resp.status_code == 200:
-                    log.info("Warm success in %.1fs (attempt %d)", time.time() - start, attempt)
-                    return
-                if resp.status_code == 404:
-                    # Model missing: pull then retry
-                    log.warning("Model 404 (not found). Pulling model %s ...", MODEL_NAME)
-                    _pull_model()
-                    log.info("Pull complete. Retrying generate.")
-                else:
-                    log.warning("Warm attempt %d got %s: %s", attempt, resp.status_code, resp.text[:200])
-            except requests.RequestException as e:
-                log.warning("Warm attempt %d network error: %s", attempt, e)
-            time.sleep(3)
-        log.error("Warm timed out after %.1fs", time.time() - start)
-    except Exception as e:
-        log.exception("Warm failed: %s", e)
-
 
 # Simple in‑memory LRU-ish cache (bounded)
 _CACHE = {}
