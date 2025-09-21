@@ -5,9 +5,10 @@ services:
       dockerfile: Dockerfile
     environment:
       - OLLAMA_URL=http://ollama:11434
-      - REQUEST_TIMEOUT=180
-      - NUM_PREDICT=220
+      - MODEL_NAME=llama3:8b-instruct-q4_K_M
       - OLLAMA_STREAM=true
+      - NUM_PREDICT=170
+      - MAX_RESUME_CHARS=6000
     restart: unless-stopped
     depends_on:
       - ollama
