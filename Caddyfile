@@ -30,7 +30,9 @@ http://resumereviewer.lukasanell.org {
         }
     }
 
-    log { output file /data/access.log }
+    log {
+        output file /data/access.log
+    }
 }
 
 # HTTPS vhost (normal operation with proper TLS)
@@ -67,5 +69,7 @@ resumereviewer.lukasanell.org {
         }
     }
 
-    log { output file /data/access.log }
+    log {
+        output file /data/access.log
+    }
 }
