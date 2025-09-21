@@ -13,9 +13,6 @@ client = OpenAI(
   api_key=""
 )
 
-
-print(response.output_text);
-
 app = Flask(__name__)
 
 # Configure basic logging
@@ -30,8 +27,8 @@ ALLOWED_ORIGINS = os.environ.get(
 CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}}, supports_credentials=False)
 
 # Get the Ollama service URL from an environment variable, with a default for local testing
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-MODEL_NAME = os.environ.get("MODEL_NAME", "llama3")
+# OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+# MODEL_NAME = os.environ.get("MODEL_NAME", "llama3")
 
 
 @app.route('/health', methods=['GET'])
@@ -68,7 +65,7 @@ def analyze_resume():
 
     resume_text = data['text']
 
-    # The prompt for Ollama
+    # The prompt for chatGPT
     prompt = f"""
     You are a resume reviewer. Analyze the following resume text and respond ONLY with a single valid JSON object matching this exact schema. Do not include backticks, markdown, comments, or any text outside the JSON. Use integers 0-5 for all scores and clamp values within range.
 
@@ -106,29 +103,34 @@ def analyze_resume():
     score of 4: Well-chosen relevant experiences; mostly specific outcomes; balanced skills tied to experiences; professional look; mostly error-free.
     score of 5: Fully tailored; clear measurable impact; highly relevant skills; polished and consistent; error-free.
     """
-    response = client.responses.create(
-        model="gpt-5-nano",
-        input=prompt,
-        store=True,
-    )
+
 
     #response contains a string with what user did
 
 
     # Truncate very large resumes to avoid long tokenize time
-    MAX_CHARS = 12000  # adjust as needed
-    resume_text = resume_text[:MAX_CHARS]
+    # MAX_CHARS = 12000  # adjust as needed
+    # resume_text = resume_text[:MAX_CHARS]
 
-    ollama_payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "format": "json",
-        "stream": False  # set True if you want incremental output & faster first byte
-    }
+    # ollama_payload = {
+    #     "model": MODEL_NAME,
+    #     "prompt": prompt,
+    #     "format": "json",
+    #     "stream": False  # set True if you want incremental output & faster first byte
+    # }
 
     try:
-        # Forward the request to the Ollama container (with timeout)
-        response = requests.post(f"{OLLAMA_URL}/api/generate", json=ollama_payload, timeout=120)
+        # Forward the request to openAI API
+        logger.debug("Analyzing resume: %s", resume_text)
+        responseFromGPT = client.responses.create(
+            model="gpt-5-nano",
+            input=prompt,
+            store=True,
+        )
+        logger.debug("Analyzing response: %s", responseFromGPT.text)
+
+        response = json.loads(responseFromGPT.text)
+        #Response is string (?) how do we parse a string as a json
         try:
             response.raise_for_status()  # Raise an exception for bad status codes
         except requests.exceptions.HTTPError as http_err:
