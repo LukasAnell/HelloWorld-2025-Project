@@ -10,19 +10,11 @@ from flask_cors import CORS
 from openai import OpenAI
 
 client = OpenAI(
-  api_key="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"
-)
-
-"""
-response = client.responses.create(
-  model="gpt-5-nano",
-  input="write a haiku about ai",
-  store=True,
+  api_key=""
 )
 
 
 print(response.output_text);
-"""
 
 app = Flask(__name__)
 
@@ -114,6 +106,14 @@ def analyze_resume():
     score of 4: Well-chosen relevant experiences; mostly specific outcomes; balanced skills tied to experiences; professional look; mostly error-free.
     score of 5: Fully tailored; clear measurable impact; highly relevant skills; polished and consistent; error-free.
     """
+    response = client.responses.create(
+        model="gpt-5-nano",
+        input=prompt,
+        store=True,
+    )
+
+    #response contains a string with what user did
+
 
     # Truncate very large resumes to avoid long tokenize time
     MAX_CHARS = 12000  # adjust as needed
