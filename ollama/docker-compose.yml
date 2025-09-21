@@ -2,18 +2,15 @@ services:
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
-    # do NOT publish 80/443 here; Traefik will terminate TLS
-    # Ollama listens inside the container on 11434
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ollama.rule=Host(`ollama.lukasanell.org`)"
-      - "traefik.http.routers.ollama.entrypoints=websecure"
-      - "traefik.http.routers.ollama.tls=true"
-      - "traefik.http.routers.ollama.tls.certresolver=myresolver"  # match your Traefik ACME resolver name
-      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
-    networks:
-      - web
+    ports:
+      - "11434:11434"   # expose Ollama locally (do not expose 80/443 here)
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-networks:
-  web:
-    external: true  # should be the same Docker network Traefik uses
+volumes:
+  ollama_models:
