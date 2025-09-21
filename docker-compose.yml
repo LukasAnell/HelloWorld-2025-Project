@@ -8,7 +8,6 @@ services:
       - MODEL_NAME=llama3:8b-instruct-q4_K_M
       - OLLAMA_STREAM=true
       - NUM_PREDICT=170
-      - MAX_RESUME_CHARS=6000
     restart: unless-stopped
     depends_on:
       - ollama

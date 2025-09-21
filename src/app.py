@@ -13,7 +13,9 @@ OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434")
 MODEL_NAME = os.environ.get("MODEL_NAME", "llama3:8b")
 MAX_RESUME_CHARS = int(os.environ.get("MAX_RESUME_CHARS", "6000"))
 NUM_PREDICT = int(os.environ.get("NUM_PREDICT", "170"))
-REQUEST_TIMEOUT = int(os.environ.get("REQUEST_TIMEOUT", "90"))
+REQUEST_CONNECT_TIMEOUT = int(os.getenv("REQUEST_CONNECT_TIMEOUT", "10"))
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "10"))
+REQUEST_READ_TIMEOUT = int(os.getenv("REQUEST_READ_TIMEOUT", "240"))
 STREAM = os.environ.get("OLLAMA_STREAM", "false").lower() == "true"
 CACHE_SIZE = int(os.environ.get("CACHE_SIZE", "64"))
 WARM_TIMEOUT = int(os.environ.get("WARM_TIMEOUT", "240"))
@@ -106,6 +108,15 @@ threading.Thread(target=warm_model, daemon=True).start()
 def health():
     return jsonify({"status": "ok"}), 200
 
+def _call_ollama(payload, stream: bool):
+    # Use tuple timeout: (connect, read)
+    return requests.post(
+        f"{OLLAMA_URL}/api/generate",
+        json=payload,
+        stream=stream,
+        timeout=(REQUEST_CONNECT_TIMEOUT, REQUEST_READ_TIMEOUT)
+    )
+
 @app.post("/analyze")
 def analyze():
     started = time.time()
@@ -121,22 +132,24 @@ def analyze():
 
     prompt = build_prompt(resume_raw)
 
+    stream = STREAM
     payload = {
         "model": MODEL_NAME,
         "prompt": prompt,
         "format": "json",
-        "stream": STREAM is True,
+        "stream": stream,
         "options": {
             "num_predict": NUM_PREDICT,
             "temperature": 0.2,
             "top_p": 0.9,
             "top_k": 40,
             "repeat_penalty": 1.1,
-            "mirostat": 0
         }
     }
 
     try:
+        resp = _call_ollama(payload, stream=stream)
+        resp.raise_for_status()
         if STREAM:
             resp = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, stream=True, timeout=REQUEST_TIMEOUT)
             if resp.status_code != 200:
@@ -188,10 +201,11 @@ def analyze():
         log.info("Analyze ok in %.2fs (stream=%s)", elapsed, STREAM)
         return jsonify(parsed), 200
 
-    except requests.exceptions.Timeout:
-        return jsonify({"error": "LLM timeout"}), 504
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": "Connection error", "detail": str(e)}), 502
+
+    except requests.Timeout:
+        return jsonify({"error": "Upstream LLM timeout"}), 504
+    except requests.RequestException as e:
+        return jsonify({"error": "Upstream LLM error", "detail": str(e)}), 502
     except Exception as e:
         log.exception("Unhandled")
         return jsonify({"error": "Internal error", "detail": str(e)}), 500
