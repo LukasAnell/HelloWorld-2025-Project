@@ -7,7 +7,7 @@ services:
     depends_on:
       - backend
     networks:
-      - appnet
+      - app-network
 
   backend:
     image: python:3.11-alpine
@@ -20,13 +20,13 @@ services:
     depends_on:
       - ollama
     networks:
-      - appnet
+      - app-network
 
   ollama:
     image: ollama/ollama:latest
     networks:
-      - appnet
+      - app-network
 
 networks:
-  appnet:
+  app-network:
     driver: bridge
