@@ -1,11 +1,11 @@
  - Implement a server with the llama model
- - look into whether we can send pdf or how to establish communication with the server
+ ~~- look into whether we can send pdf or how to establish communication with the server~~
  - load balancing aka kick people into a queue if more than one tries to use the server at once
  - GUI
-   - Button to select files
-   - Step by step walkthrough and score evaluation of each part of the resume
-   - Engineer the prompts (concrete prompts)
-   - We should set up a rubric and ask the AI 
+   ~~- Button to select files~~
+   ~~- Step by step walkthrough and score evaluation of each part of the resume~~
+   ~~- Engineer the prompts (concrete prompts)~~
+   ~~- We should set up a rubric and ask the AI~~ 
    to evaluate each category because I don't trust the AI to be objective
      - Is this a resume (yes or no)? if no why or how is this related to applying to jobs?
      - Conciseness score? longer than a page, does the text ramble, bullet points
