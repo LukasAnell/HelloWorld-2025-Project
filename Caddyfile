@@ -3,15 +3,20 @@ resumereviewer.lukasanell.org {
     encode gzip zstd
 
     route {
-        handle_path /analyze* {
+        # API endpoints first (non-stripping). Do NOT use handle_path here.
+        handle /analyze* {
             reverse_proxy backend:5001
         }
-        handle_path /health* {
+        handle /health {
             reverse_proxy backend:5001
         }
+
+        # Optional: debug Ollama; stripping is fine for nested paths
         handle_path /ollama* {
             reverse_proxy ollama:11434
         }
+
+        # Static site fallback
         handle {
             root * /srv
             try_files {path} /index.html
