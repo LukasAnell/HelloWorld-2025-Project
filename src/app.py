@@ -1,12 +1,25 @@
 # src/app.py
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
 
+# CORS: allow the production domain and common local dev origins
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "https://resumereviewer.lukasanell.org,http://localhost:5001,http://localhost:8080,http://127.0.0.1:8080,http://localhost"
+).split(",")
+CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}}, supports_credentials=False)
+
 # Get the Ollama service URL from an environment variable, with a default for local testing
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+MODEL_NAME = os.environ.get("MODEL_NAME", "llama3")
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"}), 200
 
 @app.route('/analyze', methods=['POST'])
 def analyze_resume():
@@ -45,7 +58,7 @@ def analyze_resume():
     try:
         # The payload to send to Ollama's API
         ollama_payload = {
-            "model": "llama3",  # Or whatever model you are using
+            "model": MODEL_NAME,  # Configurable via env
             "prompt": prompt,
             "format": "json",   # Request JSON output from Ollama
             "stream": False
