@@ -82,7 +82,7 @@
 
         .analysis-mode {display:flex; flex-direction:row; width:100%; height:100%;}
         .analysis-pane {height:100%; overflow-y:hidden; transition:0.8s; padding:10px; box-sizing:border-box;}
-        .analysis-marked {flex:0; background-color:#fff; border-left:2px solid var(--divider-color); border-right:2px solid var(--divider-color);}
+        .analysis-marked {flex:0; background-color:#fff; border-left:2px solid var(--divider-color); border-right:2px solid var(--divider-color); overflow-y:auto;}
         .analysis-comments {flex:0; background-color:var(--light-bg); border-left:2px solid var(--divider-color); padding:15px; font-size:15px; color:var(--text-secondary); display:flex; flex-direction:column;}
         .comments-scroll {overflow-y:auto; flex:1;}
 
@@ -90,7 +90,7 @@
         .flipper-header {cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:bold; margin-bottom:5px; user-select: none;}
         .flipper-content {
             display: none;
-            padding: 5px 0 10px 20px; /* add left padding */
+            padding: 5px 0 10px 20px;
             margin: 0;
         }
         .flipper-header span.arrow {transition: transform 0.3s;}
@@ -98,47 +98,28 @@
 
         @media (max-width: 1024px) {
             body { overflow: auto; }
-
-            /* Main content layout */
             .main-content { flex-direction: column; margin: 10px 16px; }
             .upload-pane { width: 100%; margin-bottom: 16px; }
             .separator { display: none; }
-
-            /* Drop zone adjustments */
             .drop-zone svg { width: 120px; height: 120px; margin-bottom: 10px; }
             .drop-zone h2 { font-size: 18px; }
-
-            /* Buttons */
             .browse-btn, .sample-btn { font-size: 12px; padding: 10px 20px; }
             .sample-files-container h4 { font-size: 12px; }
-
-            /* Intro screen adjustments */
             .intro-box { padding: 20px 25px; max-width: 90%; }
             #intro-screen h1 { font-size: 24px; }
             .intro-text { font-size: 13px; line-height: 1.5; }
-
-            /* PDF viewer adjustments */
             #pdf-canvas-container { height: calc(100vh - 60px - 50px); padding: 10px; overflow-y: auto; }
             #pdf-canvas-container canvas { max-width: 100%; height: auto; }
-
             .viewer-buttons { position: sticky; bottom: 0; width: 100%; display: flex; justify-content: space-between; padding: 8px; box-sizing: border-box; }
-
-            /* Analysis mode adjustments */
             .analysis-mode { flex-direction: column; }
             .analysis-pane { width: 100%; border: none; padding: 8px; box-sizing: border-box; margin-bottom: 12px; }
             .analysis-marked { flex: 0; margin-bottom: 12px; }
             .analysis-comments { flex: 0; margin-bottom: 12px; }
-
-            /* Comments box scaling */
             .comment-box { padding: 10px; }
             .flipper-content { padding-left: 15px; }
             .flipper-header span { font-size: 14px; }
-
-            /* PDF marked-up pane resizing */
             .analysis-marked canvas { max-width: 100%; height: auto; }
         }
-
-
     </style>
 </head>
 <body>
@@ -288,7 +269,7 @@
             });
         });
 
-        analyzeBtn.addEventListener('click', ()=> {
+        analyzeBtn.addEventListener('click', async ()=> {
             pdfCanvasContainer.innerHTML='';
             pdfCanvasContainer.classList.add('analysis-mode');
 
@@ -363,7 +344,14 @@
             setTimeout(()=>{
                 markedPane.style.flex='0.66';
                 commentsPane.style.flex='0.34';
-                lastRenderedCanvases.forEach(c=>markedPane.appendChild(c.cloneNode(true)));
+
+                // Render scrollable marked-up PDF inside markedPane
+                lastRenderedCanvases.forEach(c=> {
+                    const canvasWrapper = document.createElement('div');
+                    canvasWrapper.style.marginBottom = '15px';
+                    canvasWrapper.appendChild(c.cloneNode(true));
+                    markedPane.appendChild(canvasWrapper);
+                });
             },50);
         });
     });
