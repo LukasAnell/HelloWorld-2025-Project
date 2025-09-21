@@ -98,12 +98,15 @@ def analyze_resume():
     score of 5: Fully tailored; clear measurable impact; highly relevant skills; polished and consistent; error-free.
     """
 
-    # The payload to send to Ollama's API
+    # Truncate very large resumes to avoid long tokenize time
+    MAX_CHARS = 12000  # adjust as needed
+    resume_text = resume_text[:MAX_CHARS]
+
     ollama_payload = {
-        "model": MODEL_NAME,  # Configurable via env
+        "model": MODEL_NAME,
         "prompt": prompt,
-        "format": "json",  # Request JSON output from Ollama
-        "stream": False
+        "format": "json",
+        "stream": True  # set True if you want incremental output & faster first byte
     }
 
     try:
