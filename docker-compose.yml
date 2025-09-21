@@ -1,28 +1,32 @@
+version: '3.8'
 services:
-  resumereviewer-web:
-    build: .
-    container_name: resumereviewer-web
-    restart: unless-stopped
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/nginx.conf:ro
-    labels:
-      # Enable Traefik for this container
-      - "traefik.enable=true"
-      
-      # Define the router for HTTPS traffic
-      - "traefik.http.routers.resumereviewer.rule=Host(`resumereviewer.lukasanell.org`)"
-      - "traefik.http.routers.resumereviewer.entrypoints=websecure"
-      - "traefik.http.routers.resumereviewer.tls.certresolver=letsencrypt" # Assumes your Traefik cert resolver is named 'letsencrypt'
-      
-      # Define the service and tell Traefik which port the container is using
-      - "traefik.http.services.resumereviewer.loadbalancer.server.port=80"
-      
-      # Explicitly tell Traefik to use the 'proxy' network for this service
-      - "traefik.docker.network=proxy"
-      
+  frontend:
+    build: ./  # Assumes your Dockerfile is in the project root
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
     networks:
-      - proxy
+      - appnet
+
+  backend:
+    image: python:3.11-alpine
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: python app.py
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      - ollama
+    networks:
+      - appnet
+
+  ollama:
+    image: ollama/ollama:latest
+    networks:
+      - appnet
 
 networks:
-  proxy:
-    external: true
+  appnet:
+    driver: bridge

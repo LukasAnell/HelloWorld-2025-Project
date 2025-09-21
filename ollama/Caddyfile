@@ -1,0 +1,8 @@
+ollama.lukasanell.org {
+    reverse_proxy ollama:11434
+    tls lukasmanell@gmail.com       # replace with your email for Let's Encrypt notifications
+    encode gzip zstd
+    log {
+        output file /data/access.log
+    }
+}
