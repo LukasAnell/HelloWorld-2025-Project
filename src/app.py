@@ -104,5 +104,14 @@ def analyze_resume():
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 
+# Compatibility routes for proxies that strip path prefixes (e.g., handle_path)
+@app.route('/', methods=['GET'])
+def health_compat():
+    return health()
+
+@app.route('/', methods=['POST'])
+def analyze_compat():
+    return analyze_resume()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
