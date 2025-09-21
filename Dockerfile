@@ -19,10 +19,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install (keeps layers cacheable)
-COPY requirements.txt /app/requirements.txt
+COPY ./src/requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip \
     && pip install -r /app/requirements.txt
-
+	
 # Copy application code
 COPY src /app/src
 COPY gunicorn_conf.py /app/gunicorn_conf.py
