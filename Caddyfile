@@ -1,3 +1,12 @@
+{
+    email lukasmanell@gmail.com
+    # Use Let\'s Encrypt STAGING (avoid rate limits while testing)
+    # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+    # Optional: enable verbose logs
+    # debug
+}
+
+
 # HTTP vhost (for Cloudflare Flexible or initial reachability). No TLS/redirects here.
 http://resumereviewer.lukasanell.org {
     encode gzip zstd
