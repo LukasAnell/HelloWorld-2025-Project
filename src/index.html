@@ -358,7 +358,7 @@
 
         .analysis-pane {
             height: 100%;
-            overflow-y: auto;
+            overflow-y: hidden;
             transition: 0.8s;
             padding: 10px;
             box-sizing: border-box;
@@ -369,6 +369,7 @@
             background-color: #fff;
             border-left: 2px solid var(--divider-color);
             border-right: 2px solid var(--divider-color);
+            overflow-y: auto;
         }
 
         .analysis-comments {
@@ -378,6 +379,8 @@
             padding: 15px;
             font-size: 14px;
             color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
         }
 
         .analysis-comments h3 {
@@ -385,6 +388,13 @@
             font-size: 16px;
             color: var(--primary-color);
         }
+
+        .comments-scroll { overflow-y: auto; flex: 1; }
+        .comment-box { background: white; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
+        .flipper-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 5px; user-select: none; }
+        .flipper-content { display: none; padding: 5px 0 10px 20px; margin: 0; }
+        .flipper-header span.arrow { transition: transform 0.3s; }
+        .flipper-header.active span.arrow { transform: rotate(90deg); }
 
         @media (max-width: 768px) {
             body {
@@ -525,6 +535,7 @@
         const sampleBtns = document.querySelectorAll('.sample-btn');
 
         let lastRenderedCanvases = [];
+        let currentFile = null;
 
         function switchScreen(from, to, d = 'forward') {
             if (d === 'forward') {
@@ -588,6 +599,7 @@
                 alert('Invalid File. Please select a PDF.');
                 return;
             }
+            currentFile = file;
             fileInput.value = '';
             lastRenderedCanvases = [];
             pdfCanvasContainer.className = '';
@@ -661,18 +673,17 @@
             analyzeBtn.disabled = true;
             analyzeBtn.textContent = 'Analyzing...';
 
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('File not found.');
+            if (!currentFile) {
+                alert('No file selected. Please upload or choose a sample PDF first.');
                 analyzeBtn.disabled = false;
                 analyzeBtn.textContent = 'Analyze This File';
                 return;
             }
 
             try {
-                const resumeText = await getPdfText(file);
+                const resumeText = await getPdfText(currentFile);
 
-                // Call your new backend
+                // Call backend
                 const response = await fetch('/analyze', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -683,9 +694,9 @@
                     throw new Error(`Analysis failed: ${response.statusText}`);
                 }
 
-                const analysis = await response.json(); // The JSON from Ollama
+                const analysis = await response.json(); // JSON from backend/Ollama
 
-                // --- Now, build the UI with the real data ---
+                // Build UI with real data
                 pdfCanvasContainer.innerHTML = '';
                 pdfCanvasContainer.classList.add('analysis-mode');
 
@@ -695,11 +706,9 @@
 
                 const commentsPane = document.createElement('div');
                 commentsPane.className = 'analysis-pane analysis-comments';
-                commentsPane.style.display = 'flex';
-                commentsPane.style.flexDirection = 'column';
 
                 const scoreBox = document.createElement('div');
-                scoreBox.style.flex = '0 0 auto'; // Adjust size
+                scoreBox.style.flex = '0 0 auto';
                 scoreBox.style.backgroundColor = '#fff';
                 scoreBox.style.borderRadius = '6px';
                 scoreBox.style.padding = '10px';
@@ -707,7 +716,7 @@
 
                 const totalScore = analysis.scores.reduce((sum, c) => sum + c.score, 0);
                 const maxScore = analysis.scores.reduce((sum, c) => sum + c.max, 0);
-                scoreBox.innerHTML = `<h3 style="color:var(--primary-color); margin:0 0 5px 0;">Total Score: ${totalScore}/${maxScore}</h3>`;
+                scoreBox.innerHTML = `<h3 style=\"color:var(--primary-color); margin:0 0 5px 0;\">Total Score: ${totalScore}/${maxScore}</h3>`;
 
                 const rubricContainer = document.createElement('div');
                 analysis.scores.forEach(c => {
@@ -749,14 +758,38 @@
                 });
                 scoreBox.appendChild(rubricContainer);
 
-                const commentsBox = document.createElement('div');
-                commentsBox.style.flex = '1';
-                commentsBox.style.overflowY = 'auto';
-                const commentsList = analysis.comments.map(comment => `<li>${comment}</li>`).join('');
-                commentsBox.innerHTML = `<h3>Comments</h3><ul>${commentsList}</ul>`;
+                // Scrollable comments with collapsible box
+                const scrollContainer = document.createElement('div');
+                scrollContainer.className = 'comments-scroll';
 
-                commentsPane.appendChild(scoreBox);
-                commentsPane.appendChild(commentsBox);
+                const commentsBox = document.createElement('div');
+                commentsBox.className = 'comment-box';
+                const header = document.createElement('div');
+                header.className = 'flipper-header';
+                header.innerHTML = `<span>Comments</span><span class="arrow">&#9654;</span>`;
+                const content = document.createElement('ul');
+                content.className = 'flipper-content';
+                (analysis.comments || []).forEach(txt => {
+                    const li = document.createElement('li');
+                    li.textContent = txt;
+                    content.appendChild(li);
+                });
+                header.addEventListener('click', () => {
+                    const isOpen = content.style.display === 'block';
+                    content.style.display = isOpen ? 'none' : 'block';
+                    header.classList.toggle('active', !isOpen);
+                });
+                // Open by default
+                content.style.display = 'block';
+                header.classList.add('active');
+
+                commentsBox.appendChild(header);
+                commentsBox.appendChild(content);
+
+                scrollContainer.appendChild(scoreBox);
+                scrollContainer.appendChild(commentsBox);
+
+                commentsPane.appendChild(scrollContainer);
 
                 pdfCanvasContainer.appendChild(markedPane);
                 pdfCanvasContainer.appendChild(commentsPane);
