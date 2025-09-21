@@ -2,26 +2,27 @@ resumereviewer.lukasanell.org {
     tls lukasmanell@gmail.com
     encode gzip zstd
 
-    @api path /analyze /health
-    handle @api {
-        reverse_proxy backend:5001
-    }
-
-    # Optional Ollama debug
-    handle_path /ollama* {
-        reverse_proxy ollama:11434
-    }
-
-    handle {
-        root * /srv
-        try_files {path} /index.html
-        file_server
-        header {
-            Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-            X-Content-Type-Options "nosniff"
-            X-Frame-Options "DENY"
-            Referrer-Policy "no-referrer-when-downgrade"
-            Permissions-Policy "geolocation=(), microphone()"
+    route {
+        handle /analyze* {
+            reverse_proxy backend:5001
+        }
+        handle /health {
+            reverse_proxy backend:5001
+        }
+        handle_path /ollama* {
+            reverse_proxy ollama:11434
+        }
+        handle {
+            root * /srv
+            try_files {path} /index.html
+            file_server
+            header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Content-Type-Options "nosniff"
+                X-Frame-Options "DENY"
+                Referrer-Policy "no-referrer-when-downgrade"
+                Permissions-Policy "geolocation=(), microphone()"
+            }
         }
     }
 
