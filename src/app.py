@@ -106,7 +106,7 @@ def analyze_resume():
         "model": MODEL_NAME,
         "prompt": prompt,
         "format": "json",
-        "stream": True  # set True if you want incremental output & faster first byte
+        "stream": False  # set True if you want incremental output & faster first byte
     }
 
     try:
