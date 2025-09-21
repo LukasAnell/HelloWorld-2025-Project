@@ -1,9 +1,10 @@
-version: '3.8'
 services:
   frontend:
     build: ./  # Assumes your Dockerfile is in the project root
     ports:
       - "3000:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
