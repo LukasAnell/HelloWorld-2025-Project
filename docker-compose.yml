@@ -3,11 +3,25 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
+    command: >
+      gunicorn
+      --bind 0.0.0.0:8000
+      --workers 2
+      --worker-class gthread
+      --threads 8
+      --timeout 120
+      --graceful-timeout 30
+      --capture-output
+      --log-level info
+      --config /app/gunicorn_conf.py
+      src.app:app
     environment:
       - OLLAMA_URL=http://ollama:11434
       - MODEL_NAME=llama3:8b-instruct-q4_K_M
-      - OLLAMA_STREAM=true
-      - NUM_PREDICT=170
+      - REQUEST_CONNECT_TIMEOUT=5
+      - REQUEST_READ_TIMEOUT=90
+      - MAX_RESUME_CHARS=6000
+      - CACHE_SIZE=64
     restart: unless-stopped
     depends_on:
       - ollama

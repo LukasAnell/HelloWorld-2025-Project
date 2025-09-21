@@ -1,4 +1,6 @@
-Flask
-Flask-Cors
-requests
-gunicorn
+flask>=3.0
+gunicorn>=21.0
+requests>=2.31
+flask-cors>=4.0
+jsonschema>=4.0
+prometheus-client>=0.16

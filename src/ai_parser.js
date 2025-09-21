@@ -95,3 +95,56 @@
 
   window.parseAiAnalysis = parseAiAnalysis;
 })();
+
+async function extractTextFromPdfFile(file) {
+  // Assumes pdfjsLib is available globally (you already use it)
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  if (numPages > 2) {
+    // show inline UI error rather than alert()
+    showInlineError("Resume is longer than 2 pages — please upload a shorter version (max 2 pages).");
+    return null;
+  }
+
+  let fullText = "";
+  const pagesToRead = Math.min(2, numPages);
+  for (let i = 1; i <= pagesToRead; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(item => item.str).join(" ");
+    fullText += pageText + "\n\n";
+    // optional: break early if text length exceeds some threshold
+    if (fullText.length > 6000) {
+      fullText = fullText.slice(0, 6000);
+      break;
+    }
+  }
+  return { text: fullText.trim(), pages: numPages };
+}
+
+async function onUploadAndAnalyze(file) {
+  const extracted = await extractTextFromPdfFile(file);
+  if (!extracted) return; // user saw error
+  // Show spinner / UI state
+  setAnalyzing(true);
+
+  try {
+    const resp = await fetch("/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(extracted),
+    });
+    const j = await resp.json();
+    if (!resp.ok) {
+      showInlineError(j.error || "Analysis failed");
+    } else {
+      renderResults(j);
+    }
+  } catch (e) {
+    showInlineError("Network or server error. Try again later.");
+  } finally {
+    setAnalyzing(false);
+  }
+}
