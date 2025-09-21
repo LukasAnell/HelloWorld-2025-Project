@@ -123,7 +123,7 @@ def warm_model():
     except Exception as e:
         log.warning("Warm model failed: %s", e)
 
-@app.before_first_request
+@app.before_request
 def _init():
     # Fire and forget warm-up
     try:
@@ -190,7 +190,7 @@ def analyze():
     {text}
     ---"""
 
-    want_stream = ENABLE_STREAM or request.args.get("stream") == "1"
+    want_stream = STREAM or request.args.get("stream") == "1"
 
     try:
         payload = _ollama_payload(prompt, stream=want_stream)
@@ -208,7 +208,7 @@ def analyze():
         try:
             parsed = json.loads(raw) if isinstance(raw, str) else raw
         except Exception as je:
-            logger.warning("Invalid model JSON: %s snippet=%s", je, str(raw)[:400])
+            log.warning("Invalid model JSON: %s snippet=%s", je, str(raw)[:400])
             return jsonify({"error": "Model returned invalid JSON", "raw": raw}), 502
         return jsonify(parsed), 200
     except requests.HTTPError as he:
@@ -218,7 +218,7 @@ def analyze():
     except requests.RequestException as re:
         return jsonify({"error": f"Ollama request failed: {re}"}), 502
     except Exception as e:
-        logger.exception("Unexpected error")
+        log.exception("Unexpected error")
         return jsonify({"error": "Internal failure", "detail": str(e)}), 500
 
 # Optional: expose current model/config
