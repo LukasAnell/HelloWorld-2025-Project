@@ -7,6 +7,23 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+from openai import OpenAI
+
+client = OpenAI(
+  api_key="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"
+)
+
+"""
+response = client.responses.create(
+  model="gpt-5-nano",
+  input="write a haiku about ai",
+  store=True,
+)
+
+
+print(response.output_text);
+"""
+
 app = Flask(__name__)
 
 # Configure basic logging
