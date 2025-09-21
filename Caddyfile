@@ -2,26 +2,30 @@ resumereviewer.lukasanell.org {
     tls lukasmanell@gmail.com
     encode gzip zstd
 
-    # Proxy API calls to the backend Flask service
-    @api path /analyze /health
-    reverse_proxy @api backend:5001
-
-    # Optional: expose Ollama API at /ollama/* (handy for debugging)
-    handle_path /ollama* {
-        reverse_proxy ollama:11434
-    }
-
-    # Serve the frontend (index.html + assets) from ./src mounted at /srv
-    handle {
-        root * /srv
-        try_files {path} /index.html
-        file_server
-        header {
-            Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-            X-Content-Type-Options "nosniff"
-            X-Frame-Options "DENY"
-            Referrer-Policy "no-referrer-when-downgrade"
-            Permissions-Policy "geolocation=(), microphone=()"
+    route {
+        # API endpoints first to avoid being caught by the static handler
+        handle_path /analyze {
+            reverse_proxy backend:5001
+        }
+        handle_path /health {
+            reverse_proxy backend:5001
+        }
+        # Optional: expose Ollama API at /ollama/* (handy for debugging)
+        handle_path /ollama* {
+            reverse_proxy ollama:11434
+        }
+        # Static site fallback
+        handle {
+            root * /srv
+            try_files {path} /index.html
+            file_server
+            header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Content-Type-Options "nosniff"
+                X-Frame-Options "DENY"
+                Referrer-Policy "no-referrer-when-downgrade"
+                Permissions-Policy "geolocation=(), microphone()"
+            }
         }
     }
 
