@@ -518,6 +518,7 @@
     </div>
 </div>
 
+<script src="ai_parser.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const screens = {
@@ -694,7 +695,8 @@
                     throw new Error(`Analysis failed: ${response.statusText}`);
                 }
 
-                const analysis = await response.json(); // JSON from backend/Ollama
+                const raw = await response.json();
+                const analysis = window.parseAiAnalysis(raw);
 
                 // Build UI with real data
                 pdfCanvasContainer.innerHTML = '';
