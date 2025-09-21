@@ -1,4 +1,0 @@
-resumereviewer.lukasanell.org {
-    reverse_proxy web:80
-    tls lukasmanell@gmail.com
-}
