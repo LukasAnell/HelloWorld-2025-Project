@@ -63,7 +63,6 @@
         .browse-btn:hover {background-color:var(--hover-color); transform:translateY(-1px);}
         input[type="file"] {display:none;}
 
-        /* Sample files section */
         .sample-files-container {margin-top:20px; text-align:center; width:100%;}
         .sample-files-container h4 {font-size:13px; color:var(--text-secondary); margin-bottom:10px; font-weight:normal;}
         .sample-buttons {display:flex; justify-content:center; gap:10px; flex-wrap:wrap;}
@@ -82,23 +81,64 @@
         .viewer-buttons .back-btn:hover {background-color:#eefaff;}
 
         .analysis-mode {display:flex; flex-direction:row; width:100%; height:100%;}
-        .analysis-pane {height:100%; overflow-y:auto; transition:0.8s; padding:10px; box-sizing:border-box;}
+        .analysis-pane {height:100%; overflow-y:hidden; transition:0.8s; padding:10px; box-sizing:border-box;}
         .analysis-marked {flex:0; background-color:#fff; border-left:2px solid var(--divider-color); border-right:2px solid var(--divider-color);}
-        .analysis-comments {flex:0; background-color:var(--light-bg); border-left:2px solid var(--divider-color); padding:15px; font-size:14px; color:var(--text-secondary);}
-        .analysis-comments h3 {margin-top:0; font-size:16px; color:var(--primary-color);}
+        .analysis-comments {flex:0; background-color:var(--light-bg); border-left:2px solid var(--divider-color); padding:15px; font-size:15px; color:var(--text-secondary); display:flex; flex-direction:column;}
+        .comments-scroll {overflow-y:auto; flex:1;}
 
-        @media (max-width: 768px) {
-            body {overflow: auto;}
-            .main-content {flex-direction: column; margin:10px;}
-            .upload-pane {width: 100%; margin-bottom: 12px;}
-            .separator {display:none;}
-            #pdf-canvas-container {height: calc(100vh - 60px - 50px); padding:10px; overflow-y:auto;}
-            .viewer-buttons {position:sticky; bottom:0; width:100%; display:flex; justify-content:space-between; padding:8px; box-sizing:border-box;}
-            .analysis-mode {flex-direction: column;}
-            .analysis-pane {width:100%; border:none; padding:8px;}
-            .analysis-marked {margin-bottom:12px;}
-            .analysis-comments {margin-bottom:12px;}
+        .comment-box {background:white; border-radius:8px; padding:15px; margin-bottom:10px;}
+        .flipper-header {cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:bold; margin-bottom:5px; user-select: none;}
+        .flipper-content {
+            display: none;
+            padding: 5px 0 10px 20px; /* add left padding */
+            margin: 0;
         }
+        .flipper-header span.arrow {transition: transform 0.3s;}
+        .flipper-header.active span.arrow {transform:rotate(90deg);}
+
+        @media (max-width: 1024px) {
+            body { overflow: auto; }
+
+            /* Main content layout */
+            .main-content { flex-direction: column; margin: 10px 16px; }
+            .upload-pane { width: 100%; margin-bottom: 16px; }
+            .separator { display: none; }
+
+            /* Drop zone adjustments */
+            .drop-zone svg { width: 120px; height: 120px; margin-bottom: 10px; }
+            .drop-zone h2 { font-size: 18px; }
+
+            /* Buttons */
+            .browse-btn, .sample-btn { font-size: 12px; padding: 10px 20px; }
+            .sample-files-container h4 { font-size: 12px; }
+
+            /* Intro screen adjustments */
+            .intro-box { padding: 20px 25px; max-width: 90%; }
+            #intro-screen h1 { font-size: 24px; }
+            .intro-text { font-size: 13px; line-height: 1.5; }
+
+            /* PDF viewer adjustments */
+            #pdf-canvas-container { height: calc(100vh - 60px - 50px); padding: 10px; overflow-y: auto; }
+            #pdf-canvas-container canvas { max-width: 100%; height: auto; }
+
+            .viewer-buttons { position: sticky; bottom: 0; width: 100%; display: flex; justify-content: space-between; padding: 8px; box-sizing: border-box; }
+
+            /* Analysis mode adjustments */
+            .analysis-mode { flex-direction: column; }
+            .analysis-pane { width: 100%; border: none; padding: 8px; box-sizing: border-box; margin-bottom: 12px; }
+            .analysis-marked { flex: 0; margin-bottom: 12px; }
+            .analysis-comments { flex: 0; margin-bottom: 12px; }
+
+            /* Comments box scaling */
+            .comment-box { padding: 10px; }
+            .flipper-content { padding-left: 15px; }
+            .flipper-header span { font-size: 14px; }
+
+            /* PDF marked-up pane resizing */
+            .analysis-marked canvas { max-width: 100%; height: auto; }
+        }
+
+
     </style>
 </head>
 <body>
@@ -190,12 +230,7 @@
             }
         }
 
-        function showMainApp() {
-            localStorage.setItem('hasSeenIntro','true');
-            switchScreen(screens.intro, screens.main,'forward');
-        }
-
-        continueBtn.addEventListener('click', showMainApp);
+        continueBtn.addEventListener('click', ()=>switchScreen(screens.intro, screens.main,'forward'));
         screens.intro.classList.add('active');
 
         browseBtn.addEventListener('click',()=>fileInput.click());
@@ -214,8 +249,6 @@
         backBtn.addEventListener('click', ()=>{pdfCanvasContainer.className=''; switchScreen(screens.pdf,screens.main,'back');});
 
         async function renderPdf(file,targetPane=null){
-            if(!targetPane) pdfCanvasContainer.innerHTML='';
-            lastRenderedCanvases=[];
             pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
@@ -233,7 +266,6 @@
             }
         }
 
-        // Sample file logic
         sampleBtns.forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const filename = btn.dataset.filename;
@@ -266,47 +298,64 @@
 
             const commentsPane = document.createElement('div');
             commentsPane.className = 'analysis-pane analysis-comments';
-            commentsPane.style.display='flex';
-            commentsPane.style.flexDirection='column';
+            const scrollContainer = document.createElement('div');
+            scrollContainer.className='comments-scroll';
 
             const scoreBox = document.createElement('div');
-            scoreBox.style.flex='0 0 20%';
-            scoreBox.style.backgroundColor='#fff';
-            scoreBox.style.borderRadius='6px';
-            scoreBox.style.padding='10px';
-            scoreBox.style.marginBottom='10px';
-            scoreBox.innerHTML=`<h3 style="color:var(--primary-color); margin:0 0 5px 0;">Total Score: 20/25</h3>`;
+            scoreBox.style.backgroundColor = '#fff';
+            scoreBox.style.borderRadius = '8px';
+            scoreBox.style.padding = '20px';
+            scoreBox.style.marginBottom = '10px';
+            scoreBox.innerHTML = `<h2 style="color:var(--primary-color); margin:0 0 10px 0; font-size:18px;">Total Score: 15/25</h2>`;
 
             const rubricContainer = document.createElement('div');
             const criteria = [
-                {name:"Content / Relevance", score:4, max:5},
-                {name:"Achievements / Results", score:4, max:5},
-                {name:"Skills / Keywords", score:4, max:5},
+                {name:"Content / Relevance", score:1, max:5},
+                {name:"Achievements / Results", score:2, max:5},
+                {name:"Skills / Keywords", score:3, max:5},
                 {name:"Organization / Formatting", score:4, max:5},
-                {name:"Professionalism", score:4, max:5}
+                {name:"Professionalism", score:5, max:5}
             ];
             criteria.forEach(c=>{
                 const row = document.createElement('div');
-                row.style.display='flex'; row.style.alignItems='center'; row.style.marginBottom='4px';
-                const label = document.createElement('span'); label.textContent = `${c.name}: `; label.style.flex='0 0 45%'; label.style.fontSize='12px'; label.style.color='#333';
-                const barContainer = document.createElement('div'); barContainer.style.flex='1'; barContainer.style.backgroundColor='#e0e0e0'; barContainer.style.height='8px'; barContainer.style.borderRadius='4px'; barContainer.style.overflow='hidden'; barContainer.style.marginRight='8px';
-                const bar = document.createElement('div'); bar.style.width = `${(c.score/c.max)*100}%`; bar.style.height='100%'; bar.style.backgroundColor='#66D2FF'; bar.style.borderRadius='4px';
-                barContainer.appendChild(bar);
-                const scoreText = document.createElement('span'); scoreText.textContent = `${c.score}/${c.max}`; scoreText.style.fontSize='12px'; scoreText.style.flex='0 0 35px'; scoreText.style.textAlign='right';
-                row.appendChild(label); row.appendChild(barContainer); row.appendChild(scoreText);
-                rubricContainer.appendChild(row);
+                row.style.display='flex'; row.style.alignItems='center'; row.style.marginBottom='6px';
+                const label = document.createElement('span'); label.textContent = `${c.name}: `; label.style.flex='0 0 50%'; label.style.fontSize='14px'; label.style.color='#333';
+                const barContainer = document.createElement('div'); barContainer.style.flex='1'; barContainer.style.backgroundColor='#e0e0e0'; barContainer.style.height='12px'; barContainer.style.borderRadius='6px'; barContainer.style.overflow='hidden'; barContainer.style.margin='0'; barContainer.style.padding='0';
+                const bar = document.createElement('div'); bar.style.height='100%'; bar.style.borderRadius='6px';
+                const colors = ['#FF3D3DFF', '#F8882EFF', '#F1D21EFF', '#9DE533FF', '#48F848FF']; const numColors = c.score;
+                if(numColors===1){ bar.style.background=colors[0]; } else { const gradientStops=[]; for(let i=0;i<numColors;i++){ const pct=(i/(numColors-1))*100; gradientStops.push(`${colors[i]} ${pct}%`);} bar.style.background=`linear-gradient(to right, ${gradientStops.join(', ')})`; }
+                bar.style.width=`calc(${(c.score/c.max)*100}% + 10px)`;
+                const scoreText=document.createElement('span'); scoreText.textContent=`${c.score}/${c.max}`; scoreText.style.fontSize='14px'; scoreText.style.flex='0 0 40px'; scoreText.style.textAlign='right';
+                barContainer.appendChild(bar); row.appendChild(label); row.appendChild(barContainer); row.appendChild(scoreText); rubricContainer.appendChild(row);
             });
-            scoreBox.appendChild(rubricContainer);
 
-            const commentsBox = document.createElement('div');
-            commentsBox.style.flex='1'; commentsBox.style.overflowY='auto';
-            commentsBox.innerHTML=`<h3>Comments</h3>
-        <ul>
-            <li>Highlight achievements more clearly.</li>
-            <li>Consider reformatting Education section.</li>
-            <li>Add stronger action verbs.</li>
-        </ul>`;
-            commentsPane.appendChild(scoreBox); commentsPane.appendChild(commentsBox);
+            scoreBox.appendChild(rubricContainer);
+            scrollContainer.appendChild(scoreBox);
+
+            const sections = [
+                {title:'General Comments', content:['Highlight achievements more clearly.','Consider reformatting Education section.','Add stronger action verbs.']},
+                {title:'Content / Relevance', content:['Include relevant experience.','Remove unrelated info.']},
+                {title:'Achievements / Results', content:['Use metrics.','Show impact.']},
+                {title:'Skills / Keywords', content:['Include ATS keywords.','Show both technical and soft skills.']},
+                {title:'Organization / Formatting', content:['Ensure consistency.','Use bullet points for clarity.']},
+                {title:'Professionalism', content:['Check grammar/spelling.','Use professional tone.']}
+            ];
+
+            sections.forEach((sec, idx)=>{
+                const box = document.createElement('div'); box.className='comment-box';
+                const header = document.createElement('div'); header.className='flipper-header';
+                header.innerHTML = `<span>${idx+1}. ${sec.title}</span><span class="arrow">&#9654;</span>`;
+                const content = document.createElement('ul'); content.className='flipper-content';
+                sec.content.forEach(c=>{const li=document.createElement('li'); li.textContent=c; content.appendChild(li);});
+                header.addEventListener('click', ()=>{
+                    const isActive = content.style.display==='block';
+                    content.style.display = isActive?'none':'block';
+                    header.classList.toggle('active', !isActive);
+                });
+                box.appendChild(header); box.appendChild(content); scrollContainer.appendChild(box);
+            });
+
+            commentsPane.appendChild(scrollContainer);
 
             pdfCanvasContainer.appendChild(markedPane);
             pdfCanvasContainer.appendChild(commentsPane);
@@ -317,7 +366,6 @@
                 lastRenderedCanvases.forEach(c=>markedPane.appendChild(c.cloneNode(true)));
             },50);
         });
-
     });
 </script>
 </body>
