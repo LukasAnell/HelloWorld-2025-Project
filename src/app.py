@@ -112,6 +112,20 @@ Completely error-free, professional tone throughout, up-to-date, polished, and s
     Rubric:
     """
 
+<<<<<<< HEAD
+=======
+    # Truncate very large resumes to avoid long tokenize time
+    MAX_CHARS = 12000  # adjust as needed
+    resume_text = resume_text[:MAX_CHARS]
+
+    ollama_payload = {
+        "model": MODEL_NAME,
+        "prompt": prompt,
+        "format": "json",
+        "stream": False  # set True if you want incremental output & faster first byte
+    }
+
+>>>>>>> c10cd53 (Disable streaming output in API request for improved stability)
     try:
         # The payload to send to Ollama's API
         ollama_payload = {
